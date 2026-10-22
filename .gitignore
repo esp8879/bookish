@@ -1,0 +1,8 @@
+node_modules
+dist
+.firebase
+*.log
+.DS_Store
+# personal data: never commit
+*.xlsx
+My Clippings*.txt
