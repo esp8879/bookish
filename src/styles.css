@@ -295,9 +295,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
 /* --- wide screens (Mac, iPad) --------------------------------------------- */
 @media (min-width: 700px) {
   .screen, .page { padding-top: 48px; }
-  /* The main screen flows like any page, so the drawers row sits right after the content. */
-  .screen.home { position: static; overflow: visible; padding-top: 48px; padding-bottom: 64px; }
-  .drawers { margin-top: 8px; }
+  /* The main screen flows like any page. Its drawers row moves to the top right, desktop-style, so navigation lives
+     along the top edge on every screen (the drawer screens have "‹ Now" top left). */
+  .screen.home { position: static; overflow: visible; padding-top: 28px; padding-bottom: 64px; }
+  .drawers { order: -1; margin: 0 -18px -12px auto; justify-content: flex-end; gap: 4px; }
+  .drawers button { min-height: 40px; }
   /* The main screen's row follows the content here, so the drawer screens don't need the band either. */
   .bottom-band { display: none; }
   .screen.drawer { padding-bottom: 64px; }
