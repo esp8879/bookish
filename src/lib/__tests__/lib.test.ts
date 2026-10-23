@@ -7,6 +7,7 @@ import { sheetsToIncoming, cellDate } from '../spreadsheet';
 import { planMerge } from '../importer';
 import { parseClippings, matchBook, newHighlights, groupClippings } from '../clippings';
 import { fromJSON, toCSV, toJSON, toMarkdown } from '../export';
+import { demoBooks } from '../../data/demo';
 
 let n = 0;
 const read = (p: Partial<Read>): Read => ({ id: `r${n++}`, status: 'finished', started: null, ended: null, note: '', ...p });
@@ -186,3 +187,15 @@ describe('export', () => {
   });
 });
 
+
+describe('demo library', () => {
+  it('has one book reading, a queue past Up Next, finished reads with notes, and a set-aside book', () => {
+    const lib = demoBooks();
+    expect(readingNow(lib)).toHaveLength(1);
+    expect(queue(lib).length).toBeGreaterThan(5);
+    const done = history(lib);
+    expect(done.filter((i) => i.read.status === 'finished').every((i) => i.read.note)).toBe(true);
+    expect(done.some((i) => i.read.status === 'dnf' && i.book.rank == null)).toBe(true);
+    expect(new Set(lib.map((b) => b.id)).size).toBe(lib.length);
+  });
+});

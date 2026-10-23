@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { collection, doc, onSnapshot, setDoc, updateDoc, writeBatch, getDocs, query, limit, disableNetwork, enableNetwork, deleteField, type DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
 import { forgetLibrary } from '../library';
+import { DEMO_ID, demoBooks } from './demo';
 import type { Book, Read, Highlight } from '../types';
 import { bottomRank, newId, normalizeBook, queue } from '../lib/books';
 import type { MergePlan } from '../lib/importer';
@@ -36,6 +37,8 @@ export interface Store {
   /** Writes books exactly as given (restore from a JSON export). */
   putBooks: (books: Book[]) => Promise<void>;
   deleteLibrary: () => Promise<void>;
+  /** The /demo library: in memory only, nothing is saved. */
+  demo: boolean;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -55,13 +58,64 @@ async function inBatches<T>(items: T[], write: (batch: ReturnType<typeof writeBa
   }
 }
 
+/** Where books are kept. Everything above this (the store's actions) is the same for both. */
+interface Backend {
+  subscribe: (on: (books: Book[], pending: boolean) => void) => () => void;
+  set: (id: string, data: Omit<Book, 'id'>) => void;
+  patch: (id: string, patch: BookPatch) => void;
+  setMany: (books: Book[]) => Promise<void>;
+  patchMany: (patches: { id: string; patch: BookPatch }[]) => Promise<void>;
+  deleteAll: () => Promise<void>;
+}
+
+/** The real library: Firestore with its offline cache. Writes are fire-and-forget; the cache applies them instantly. */
+function firestoreBackend(lid: string): Backend {
+  const col = collection(db, 'libraries', lid, 'books');
+  // Writing a rank also drops the old two-shelf field, so normalizeBook stops offsetting it.
+  const fields = (patch: BookPatch) => ({ ...patch, ...('rank' in patch ? { shelf: deleteField() } : {}), updated_at: Date.now() });
+  return {
+    subscribe: (on) => onSnapshot(col, { includeMetadataChanges: true }, (snap) => {
+      on(snap.docs.map((d) => normalizeBook({ id: d.id, ...(d.data() as DocumentData) })), snap.metadata.hasPendingWrites);
+    }, (err) => console.error('books listener', err)),
+    set: (id, data) => { void setDoc(doc(col, id), data); },
+    patch: (id, patch) => { void updateDoc(doc(col, id), fields(patch)); },
+    setMany: (list) => inBatches(list, (batch, b) => { const { id, ...rest } = b; batch.set(doc(col, id), rest); }),
+    patchMany: (list) => inBatches(list, (batch, p) => batch.update(doc(col, p.id), fields(p.patch))),
+    deleteAll: async () => {
+      for (;;) {
+        const snap = await getDocs(query(col, limit(400)));
+        if (snap.empty) break;
+        const batch = writeBatch(db);
+        snap.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+      }
+    },
+  };
+}
+
+/** The demo: sample books held in memory for this visit only. */
+function memoryBackend(seed: Book[]): Backend {
+  const books = new Map(seed.map((b) => [b.id, b]));
+  let listener: ((books: Book[], pending: boolean) => void) | null = null;
+  const emit = () => listener?.([...books.values()], false);
+  return {
+    subscribe: (on) => { listener = on; emit(); return () => { listener = null; }; },
+    set: (id, data) => { books.set(id, { id, ...data }); emit(); },
+    patch: (id, patch) => { const b = books.get(id); if (b) { books.set(id, { ...b, ...patch, updated_at: Date.now() }); emit(); } },
+    setMany: async (list) => { list.forEach((b) => books.set(b.id, b)); emit(); },
+    patchMany: async (list) => { list.forEach(({ id, patch }) => { const b = books.get(id); if (b) books.set(id, { ...b, ...patch }); }); emit(); },
+    deleteAll: async () => { books.clear(); emit(); },
+  };
+}
+
 export function StoreProvider({ lid, children }: { lid: string; children: ReactNode }) {
   const [all, setAll] = useState<Book[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [pending, setPending] = useState(false);
   const [stuck, setStuck] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
-  const booksCol = useMemo(() => collection(db, 'libraries', lid, 'books'), [lid]);
+  const demo = lid === DEMO_ID;
+  const backend = useMemo(() => (demo ? memoryBackend(demoBooks()) : firestoreBackend(lid)), [demo, lid]);
 
   // A write that hasn't reached the server after a few seconds is waiting on signal.
   useEffect(() => {
@@ -92,11 +146,11 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   }, []);
 
   // The whole library is small: listen to all of it, so every screen works from the local cache offline.
-  useEffect(() => onSnapshot(booksCol, { includeMetadataChanges: true }, (snap) => {
-    setAll(snap.docs.map((d) => normalizeBook({ id: d.id, ...(d.data() as DocumentData) })));
-    setPending(snap.metadata.hasPendingWrites);
+  useEffect(() => backend.subscribe((list, hasPending) => {
+    setAll(list);
+    setPending(hasPending);
     setLoaded(true);
-  }, (err) => console.error('books listener', err)), [booksCol]);
+  }), [backend]);
 
   const books = useMemo(() => all.filter((b) => !b.deleted_at), [all]);
   const byId = useMemo(() => new Map(all.map((b) => [b.id, b])), [all]);
@@ -105,11 +159,7 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   const booksRef = useRef(books);
   booksRef.current = books;
 
-  // Writes are fire-and-forget: the local cache applies instantly and syncs when there's signal.
-  const update = useCallback((id: string, patch: BookPatch) => {
-    // Writing a rank also drops the old two-shelf field, so normalizeBook stops offsetting it.
-    void updateDoc(doc(booksCol, id), { ...patch, ...('rank' in patch ? { shelf: deleteField() } : {}), updated_at: Date.now() });
-  }, [booksCol]);
+  const update = useCallback((id: string, patch: BookPatch) => backend.patch(id, patch), [backend]);
 
   const addBook = useCallback<Store['addBook']>(({ title, author, reads = [], queue: queued }) => {
     const id = newId();
@@ -120,9 +170,9 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
       rank: queued ? bottomRank(queue(booksRef.current)) : null,
       highlights: [], created_at: now, updated_at: now, deleted_at: null,
     };
-    void setDoc(doc(booksCol, id), book);
+    backend.set(id, book);
     return id;
-  }, [booksCol]);
+  }, [backend]);
 
   const startReading = useCallback((id: string, started = today()) => {
     const b = ref.current.get(id);
@@ -149,30 +199,21 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   const restore = useCallback((id: string) => update(id, { deleted_at: null }), [update]);
 
   const applyMerge = useCallback(async (plan: MergePlan) => {
-    const now = Date.now();
-    await inBatches(plan.creates, (batch, b) => { const { id, ...rest } = b; batch.set(doc(booksCol, id), rest); });
-    await inBatches(plan.updates, (batch, u) => batch.update(doc(booksCol, u.id), { reads: u.reads, rank: u.rank, shelf: deleteField(), updated_at: now }));
-  }, [booksCol]);
+    await backend.setMany(plan.creates);
+    await backend.patchMany(plan.updates.map((u) => ({ id: u.id, patch: { reads: u.reads, rank: u.rank } })));
+  }, [backend]);
 
-  const putBooks = useCallback(async (list: Book[]) => {
-    await inBatches(list, (batch, b) => { const { id, ...rest } = b; batch.set(doc(booksCol, id), rest); });
-  }, [booksCol]);
+  const putBooks = useCallback((list: Book[]) => backend.setMany(list), [backend]);
 
   const deleteLibrary = useCallback(async () => {
-    for (;;) {
-      const snap = await getDocs(query(booksCol, limit(400)));
-      if (snap.empty) break;
-      const batch = writeBatch(db);
-      snap.docs.forEach((d) => batch.delete(d.ref));
-      await batch.commit();
-    }
+    await backend.deleteAll();
     forgetLibrary();
     location.href = '/';
-  }, [booksCol]);
+  }, [backend]);
 
   const value = useMemo<Store>(() => ({
-    lid, books, byId, loaded, pending, stuck, online, addBook, update, startReading, endRead, enqueue, dequeue, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary,
-  }), [lid, books, byId, loaded, pending, stuck, online, addBook, update, startReading, endRead, enqueue, dequeue, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary]);
+    lid, books, byId, loaded, pending, stuck, online, addBook, update, startReading, endRead, enqueue, dequeue, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary, demo,
+  }), [demo, lid, books, byId, loaded, pending, stuck, online, addBook, update, startReading, endRead, enqueue, dequeue, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

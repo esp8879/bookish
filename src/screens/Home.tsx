@@ -3,6 +3,7 @@ import { useStore } from '../data/store';
 import { useUI, type Tab } from '../ui';
 import { queue, readingNow, UP_NEXT, yearStats } from '../lib/books';
 import { fmtShortDay, today } from '../lib/dates';
+import { startNewLibrary } from '../library';
 import { Label, Wordmark } from '../components/common';
 import { QueueList } from '../components/QueueList';
 import { ReadingRow } from '../components/ReadingRow';
@@ -11,7 +12,7 @@ import { SyncMark } from '../components/SyncMark';
 const DRAWERS: { id: Exclude<Tab, 'now'>; label: string }[] = [{ id: 'queue', label: 'Queue' }, { id: 'stats', label: 'Stats' }, { id: 'settings', label: 'Settings' }];
 
 export function Home() {
-  const { books, loaded } = useStore();
+  const { books, loaded, demo } = useStore();
   const { setTab } = useUI();
   const [swiped, setSwiped] = useState<string | null>(null);
   const reading = useMemo(() => readingNow(books), [books]);
@@ -26,6 +27,13 @@ export function Home() {
         <div className="home-top"><Wordmark size="mini" /><SyncMark /></div>
         <div className="ledger">{fmtShortDay(day)} · {finished} {finished === 1 ? 'book' : 'books'} this year</div>
       </header>
+
+      {demo && (
+        <div className="demo-note">
+          <span>A demo with sample books. Try anything, nothing is saved.</span>
+          <button className="btn link small" onClick={startNewLibrary}>Start your own →</button>
+        </div>
+      )}
 
       {empty && (
         <section className="empty">

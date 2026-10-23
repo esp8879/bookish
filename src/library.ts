@@ -1,3 +1,5 @@
+import { DEMO_ID } from './data/demo';
+
 const LID_KEY = 'books.lid';
 const LID_CHARS = '[A-Za-z0-9_-]{24,}';
 const PATH_RE = new RegExp(`^/l/(${LID_CHARS})`);
@@ -24,6 +26,7 @@ export function lidFromUrl(url: string): string | null {
   } catch { return null; }
 }
 
+export const DEMO_PATH = '/demo';
 export const libraryPath = (lid: string) => `/l/${lid}`;
 export const libraryUrl = (lid: string) => `${location.origin}${libraryPath(lid)}`;
 
@@ -32,8 +35,10 @@ export const libraryUrl = (lid: string) => `${location.origin}${libraryPath(lid)
  * "Add to Home Screen" on iOS, which keeps the page URL, always launches into the
  * library even though a home-screen app has its own separate storage.
  * Priority: URL, then this device's saved id. Returns null if neither exists.
+ * /demo opens the in-memory demo and never replaces this device's saved library.
  */
 export function resolveLid(): string | null {
+  if (location.pathname === DEMO_PATH) return DEMO_ID;
   const lid = lidFromUrl(location.href) ?? safeGet(LID_KEY);
   if (!lid || lid.length < 24) return null;
   safeSet(LID_KEY, lid);
@@ -46,6 +51,13 @@ export function createLibrary(): string {
   safeSet(LID_KEY, lid);
   history.replaceState(null, '', libraryPath(lid));
   return lid;
+}
+
+/** Make a fresh, empty library and switch this device to it. The previous one is untouched; its link still opens it. */
+export function startNewLibrary() {
+  const lid = generateLid();
+  safeSet(LID_KEY, lid);
+  location.href = libraryPath(lid);
 }
 
 /** Switch this device to a library link and reload so listeners restart. */

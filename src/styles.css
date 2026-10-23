@@ -306,3 +306,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
   /* Sheets become centred dialogs rather than bottom sheets. */
   .sheet { top: 12vh; bottom: auto; max-height: 76vh; border: 1px solid var(--rule); border-radius: 14px; padding-bottom: 24px; box-shadow: 0 24px 60px rgba(29, 25, 21, .22); }
 }
+
+/* Demo: a quiet note under the main screen's head, with the way out to a real library. */
+.demo-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; margin: -8px 0 -4px; border-radius: 8px; background: var(--green-wash); font-size: 13px; color: var(--muted); }
+.demo-note .btn.link { flex-shrink: 0; margin-right: -6px; min-height: 32px; padding: 0 6px; }
+a.btn { text-decoration: none; }
+.demo-link { align-self: flex-start; margin-left: -10px; }

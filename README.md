@@ -18,7 +18,7 @@ so this is the app version. i built it for myself, and it only does the tracking
 
 it works offline (so you can update in the subway), installs to the home screen, and looks like paper.
 
-**try it at [readingis.cool](https://readingis.cool)**
+**try it at [readingis.cool](https://readingis.cool)**, or poke around [the demo](https://readingis.cool/demo) first (sample books, nothing is saved).
 
 ## what it doesn't do
 

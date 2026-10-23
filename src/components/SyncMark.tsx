@@ -5,8 +5,8 @@ import { useStore } from '../data/store';
  * navigator.onLine stays true on weak subway wifi, so a write stuck for a few seconds counts as not synced.
  */
 export function SyncMark() {
-  const { pending, stuck, online } = useStore();
-  const [label, state, detail] = !pending
+  const { pending, stuck, online, demo } = useStore();
+  const [label, state, detail] = demo ? ['Demo', 'busy', 'A demo. Nothing is saved.'] : !pending
     ? online ? ['Synced', 'ok', 'Everything is saved to the cloud.'] : ['Offline', 'ok', 'Offline. Everything so far is synced.']
     : !online || stuck ? ['Not synced', 'wait', 'Saved on this device. It will sync when there is a connection.']
       : ['Syncing…', 'busy', 'Saving to the cloud.'];

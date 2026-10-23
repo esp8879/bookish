@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { applyUpdate, updateReady } from './sw';
 import { StoreProvider } from './data/store';
-import { createLibrary, openLibrary, resolveLid } from './library';
+import { createLibrary, DEMO_PATH, openLibrary, resolveLid } from './library';
 import { UIProvider, useUI } from './ui';
 import { Home } from './screens/Home';
 import { Stats } from './screens/Stats';
@@ -72,6 +72,7 @@ function Welcome({ onCreate }: { onCreate: () => void }) {
       <p className="muted small">No account. Your library lives at a private link; keep it safe and it opens on any device.</p>
       <div className="stack">
         <button className="btn primary block" onClick={onCreate}>Start a library</button>
+        <a className="btn block" href={DEMO_PATH}>Look around a demo first</a>
         {!opening ? (
           <button className="btn link" onClick={() => setOpening(true)}>I have my library link</button>
         ) : (
