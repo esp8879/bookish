@@ -44,7 +44,7 @@ em { font-style: italic; }
 
 /* --- layout ------------------------------------------------------------- */
 /* One spacing scale on every screen: 20px gutters, 32px between sections, 12px row padding, 44px controls. */
-.app { max-width: 600px; margin: 0 auto; min-height: 100vh; }
+.app { max-width: 600px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; }
 .screen, .page { padding: calc(max(16px, env(safe-area-inset-top)) + 4px) var(--gutter) calc(48px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--section); }
 
 /* Every screen but the main one: nav row (back left, one action right), then the title row. */
@@ -268,7 +268,8 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 
 .link-box code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
 section > p + p { margin-top: 8px; }
 section > p.small { margin-top: 8px; }
-.welcome { max-width: 440px; margin: 0 auto; min-height: 100vh; padding: max(64px, env(safe-area-inset-top)) 24px 40px; display: flex; flex-direction: column; gap: 18px; justify-content: center; }
+/* Sized to the visible screen (dvh, not vh: mobile Safari's vh ignores its toolbars), content centred; it only scrolls if a phone is too short to fit it. */
+.welcome { max-width: 440px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; padding: max(24px, env(safe-area-inset-top)) 24px 24px; display: flex; flex-direction: column; gap: 18px; justify-content: center; }
 .lede { font-family: var(--serif); font-size: 21px; line-height: 1.4; }
 .welcome .stack { margin-top: 18px; }
 
@@ -294,6 +295,15 @@ section > p.small { margin-top: 8px; }
 .bottom-band { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; max-width: 600px; margin: 0 auto; padding: 0 var(--gutter) calc(env(safe-area-inset-bottom) + 18px); background: var(--paper); pointer-events: none; }
 .bottom-band > div { height: var(--drawers-h); }
 .screen.drawer { padding-bottom: calc(var(--drawers-h) + 18px + 32px + env(safe-area-inset-bottom)); }
+
+/* Short screens (mobile Safari with its toolbars, smaller phones): tighten the main screen so it still fits without scrolling. */
+@media (max-height: 740px) {
+  .screen.home { gap: 18px; padding-top: calc(max(12px, env(safe-area-inset-top)) + 6px); padding-bottom: calc(env(safe-area-inset-bottom) + 8px); }
+  .screen.home .list:not(.two) .reading-row .row-main { padding: 9px 0 10px; }
+  .screen.home .reading-row .row-main { padding: 8px 0 9px; }
+  .screen.home .shelf .row-main { padding: 7px 0 8px; }
+  .demo-note { margin: -6px 0 -6px; padding: 6px 10px; }
+}
 
 /* --- pointer and keyboard ------------------------------------------------- */
 :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 4px; }
