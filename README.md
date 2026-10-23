@@ -10,13 +10,15 @@ i used to keep track of what i read in a spreadsheet. title, author, start/end d
 so this is the app version. i built it for myself, and it only does the tracking part, keeping tabs on:
 
 - what i'm reading, with how many days in
-- up next: the top five that i want to read next from the longer queue
+- up next: the top five books that i want to read next, taken from the longer queue
 - the queue: everything i might read someday, plus the books i didn't finish in case i want another go
-- what i thought: one note per read, written when i finish
+- what i thought: one note per book, written when i'm done reading
 - kindle highlights, pulled in from the `My Clippings.txt` file on the kindle
 - stats for the year: how many, by month, quickest and longest
 
 it works offline (so you can update in the subway), installs to the home screen, and looks like paper.
+
+**try it at [readingis.cool](https://readingis.cool)**
 
 ## what it doesn't do
 
@@ -40,7 +42,7 @@ npm run dev
 to put it online:
 
 1. create a firebase project, add a web app, and create a firestore database
-2. put your project's web config in `src/firebase.ts` and your project id in `.firebaserc`
+2. put your project's web config in `src/firebase.ts` (the second, private branch) and your project id as `default` in `.firebaserc`
 3. `npm run deploy`
 
 `npm test` runs the tests for the parts that matter (imports, dates, the queue, stats).
