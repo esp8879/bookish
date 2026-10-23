@@ -197,5 +197,8 @@ describe('demo library', () => {
     expect(done.filter((i) => i.read.status === 'finished').every((i) => i.read.note)).toBe(true);
     expect(done.some((i) => i.read.status === 'dnf' && i.book.rank == null)).toBe(true);
     expect(new Set(lib.map((b) => b.id)).size).toBe(lib.length);
+    const hls = lib.flatMap((b) => b.highlights);
+    expect(hls.length).toBeGreaterThan(10);
+    expect(new Set(hls.map((h) => h.id)).size).toBe(hls.length);
   });
 });

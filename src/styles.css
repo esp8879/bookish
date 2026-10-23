@@ -208,7 +208,7 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 
 .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .highlights { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
 .highlights blockquote { margin: 0; padding-left: 14px; border-left: 2px solid var(--green); font-family: var(--serif); font-size: 16px; line-height: 1.55; white-space: pre-wrap; }
-.hl-meta button { margin-left: auto; }
+.hl-meta button { margin-left: auto; margin-right: -10px; }
 .hl-meta { display: flex; justify-content: space-between; align-items: center; padding-left: 16px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--drawers-h) + 16px + env(safe-area-inset-bottom)); z-index: 60; background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 8px; display: flex; gap: 14px; align-items: center; font-size: 15px; min-width: 240px; max-width: calc(100vw - 32px); box-shadow: 0 8px 28px rgba(29, 25, 21, .25); animation: fade .15s; }
