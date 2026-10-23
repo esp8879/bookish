@@ -62,7 +62,7 @@ export function Home() {
         </section>
       )}
 
-      {/* The main screen is home; the rest are drawers opened from this quiet row and closed with "‹ Now".
+      {/* The main screen is home; the rest are drawers opened from this quiet row and closed with "‹ Home".
           Pinned to the bottom on a phone; on a wide screen it follows the content. */}
       <nav className="drawers" aria-label="More">
         {DRAWERS.map((d) => <button key={d.id} onClick={() => setTab(d.id)}>{d.label}</button>)}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PartialDate } from '../types';
 import { isFullDate, today } from '../lib/dates';
 
@@ -55,19 +55,39 @@ export function Sheet({ title, onClose, children, action }: { title: string; onC
 
 /**
  * The top of every screen but the main one: a nav row with back on the left (named for where it goes)
- * and the screen's one action on the right, then the title row.
+ * and the screen's one action on the right, then the title row. The nav row stays pinned while the screen
+ * scrolls, with a soft fade beneath it once content is passing under.
  */
 export function ScreenHeader({ back, action, children }: { back: { label: string; onClick: () => void }; action?: ReactNode; children: ReactNode }) {
+  const nav = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    // Book pages scroll inside their own overlay; the other screens scroll the window.
+    const box = nav.current?.closest('.page') as HTMLElement | null;
+    const check = () => setScrolled((box ? box.scrollTop : window.scrollY) > 4);
+    const target: HTMLElement | Window = box ?? window;
+    check();
+    target.addEventListener('scroll', check, { passive: true });
+    return () => target.removeEventListener('scroll', check);
+  }, []);
   return (
     <header className="screen-head">
-      <div className="screen-nav">
-        <button className="btn link back" onClick={back.onClick}><span aria-hidden>‹</span> {back.label}</button>
+      <div ref={nav} className={`screen-nav${scrolled ? ' scrolled' : ''}`}>
+        <button className="nav-back" onClick={back.onClick}>
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden><path d="M8.5 3L4.5 7l4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          {back.label}
+        </button>
         {action}
       </div>
       <div className="screen-title">{children}</div>
     </header>
   );
 }
+
+/** Plus sign for add buttons. */
+export const PlusIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden><path d="M6.5 2v9M2 6.5h9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+);
 
 /** The name, set like a dictionary headword: book·ish, the syllable dot in library green. On the main screen only as the mini mark. */
 export function Wordmark({ size }: { size?: 'big' | 'small' | 'mini' }) {

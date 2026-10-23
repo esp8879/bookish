@@ -83,8 +83,8 @@ export function Stats() {
 
   return (
     <main className="screen drawer">
-      <ScreenHeader back={{ label: 'Now', onClick: () => setTab('now') }} action={searching
-        ? <button className="btn link" onClick={() => { setSearching(false); setQ(''); }}>Done</button>
+      <ScreenHeader back={{ label: 'Home', onClick: () => setTab('now') }} action={searching
+        ? <button className="nav-btn" onClick={() => { setSearching(false); setQ(''); }}>Done</button>
         : all.length > 0 && <button className="icon-btn" aria-label="Search every year" onClick={() => setSearching(true)}><SearchIcon /></button>}>
         {searching ? (
           <input type="search" className="search" placeholder="Titles, authors, notes" aria-label="Search every year" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />

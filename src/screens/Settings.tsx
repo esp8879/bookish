@@ -52,7 +52,7 @@ export function Settings() {
 
   return (
     <main className="screen drawer settings">
-      <ScreenHeader back={{ label: 'Now', onClick: () => setTab('now') }}><h1 className="wordmark">Settings</h1></ScreenHeader>
+      <ScreenHeader back={{ label: 'Home', onClick: () => setTab('now') }}><h1 className="wordmark">Settings</h1></ScreenHeader>
 
       {store.demo ? (
         <section>

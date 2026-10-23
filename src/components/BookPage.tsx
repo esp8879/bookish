@@ -95,7 +95,7 @@ export function BookPage({ id }: { id: string }) {
   return (
     <div className="page" role="dialog" aria-label={book.title}>
       <ScreenHeader back={{ label: TAB_NAMES[tab], onClick: () => openBook(null) }}
-        action={!editingBook && <button className="btn link" onClick={() => { setTitle(book.title); setAuthor(book.author); setEditingBook(true); }}>Edit</button>}>
+        action={!editingBook && <button className="nav-btn" onClick={() => { setTitle(book.title); setAuthor(book.author); setEditingBook(true); }}>Edit</button>}>
       {editingBook ? (
         <div className="editor">
           <Field label="Title"><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>

@@ -3,7 +3,7 @@ import { useStore } from '../data/store';
 import { useUI } from '../ui';
 import { currentRead, lastRead, queue, searchText, UP_NEXT } from '../lib/books';
 import { QueueList, SetAside } from '../components/QueueList';
-import { ScreenHeader } from '../components/common';
+import { PlusIcon, ScreenHeader } from '../components/common';
 
 /** Every book you want to read, in order. The top five are Up Next on the main screen. */
 export function Queue() {
@@ -23,7 +23,7 @@ export function Queue() {
 
   return (
     <main className="screen drawer">
-      <ScreenHeader back={{ label: 'Now', onClick: () => setTab('now') }} action={<button className="btn link" onClick={() => setAdding(true)}>Add book</button>}>
+      <ScreenHeader back={{ label: 'Home', onClick: () => setTab('now') }} action={<button className="nav-btn primary" onClick={() => setAdding(true)}><PlusIcon />Add book</button>}>
         <h1 className="wordmark">Queue</h1>
         {list.length > 0 && <span className="screen-sub">{list.length} {list.length === 1 ? 'book' : 'books'}</span>}
       </ScreenHeader>

@@ -36,7 +36,7 @@ Dates are calendar strings (`YYYY-MM-DD`, with `YYYY` allowed for imported 2025 
 
 ## Screens
 
-Navigation: **home + drawers**. The main screen is home and has no tab bar, only a quiet small-caps row at the bottom: **Queue · Stats · Settings**. Each opens as a drawer screen with **‹ Now** at the top to go back.
+Navigation: **home + drawers**. The main screen is home and has no tab bar, only a quiet small-caps row at the bottom: **Queue · Stats · Settings**. Each opens as a drawer screen with **‹ Home** at the top to go back.
 
 **Fit:** the main screen fits an iPhone 17 Pro (402×874pt) without scrolling with up to **2 books reading and 5 up next** (1 reading is the usual case). Up Next titles and authors are one line each; with two books reading, their titles are one line too.
 
