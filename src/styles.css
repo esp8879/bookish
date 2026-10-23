@@ -199,5 +199,12 @@ section > p.small { margin-top: 8px; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes up { from { transform: translateY(24px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+.book-pos { font-size: 13px; font-weight: 600; font-variant: all-small-caps; letter-spacing: .1em; color: var(--green); }
+.set-aside { font-size: 13px; color: var(--muted); font-style: italic; margin-top: 2px; }
+.note.clamp.one { -webkit-line-clamp: 1; font-size: 14px; margin-top: 0; }
+/* Up Next cue on the Queue tab: a small green numeral beside the top five. */
+.shelf.numbered .pos { width: 14px; margin-right: -4px; flex-shrink: 0; align-self: center; font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--green); font-variant-numeric: tabular-nums; text-align: left; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.35; }
+.check input { width: 20px; height: 20px; margin: 0; accent-color: var(--green); flex-shrink: 0; }
 .queue-link { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 14px 0 4px; font-size: 14px; color: var(--green); font-weight: 600; }
 .queue-note { margin-bottom: 6px; }

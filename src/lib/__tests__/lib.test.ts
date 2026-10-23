@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Book, Read } from '../../types';
 import { titleCase, nameCase } from '../titlecase';
 import { daysBetween, fmtDate, fmtRange } from '../dates';
-import { history, normalizeBook, planShelve, queue, rankAt, readingNow, upNext, yearStats } from '../books';
+import { history, normalizeBook, queue, rankAt, readingNow, upNext, yearStats } from '../books';
 import { sheetsToIncoming, cellDate } from '../spreadsheet';
 import { planMerge } from '../importer';
 import { parseClippings, matchBook, newHighlights, groupClippings } from '../clippings';
@@ -10,7 +10,7 @@ import { fromJSON, toCSV, toJSON, toMarkdown } from '../export';
 
 let n = 0;
 const read = (p: Partial<Read>): Read => ({ id: `r${n++}`, status: 'finished', started: null, ended: null, note: '', ...p });
-const book = (p: Partial<Book>): Book => ({ id: `b${n++}`, title: 'T', author: 'A', reads: [], shelf: null, rank: null, highlights: [], created_at: n, updated_at: 0, deleted_at: null, ...p });
+const book = (p: Partial<Book>): Book => ({ id: `b${n++}`, title: 'T', author: 'A', reads: [], rank: null, highlights: [], created_at: n, updated_at: 0, deleted_at: null, ...p });
 
 describe('titleCase', () => {
   it.each([
@@ -45,17 +45,13 @@ describe('dates', () => {
 });
 
 describe('derived lists', () => {
-  const reading = book({ title: 'Now', reads: [read({ status: 'reading', started: '2026-10-01' })], shelf: 'next', rank: 3 });
-  const a = book({ title: 'A', shelf: 'next', rank: 2 });
-  const b = book({ title: 'B', shelf: 'next', rank: 1 });
-  const q = book({ title: 'Q', shelf: 'queue', rank: 1 });
+  const reading = book({ title: 'Now', reads: [read({ status: 'reading', started: '2026-10-01' })], rank: 3 });
+  const a = book({ title: 'A', rank: 2 });
+  const b = book({ title: 'B', rank: 1 });
   const done = book({ title: 'Done', reads: [read({ ended: '2026-01-05' }), read({ status: 'dnf', ended: '2026-05-01' })] });
   const old = book({ title: 'Old', reads: [read({ ended: '2025' })] });
-  const lib = [reading, a, b, q, done, old];
-  it('shelves exclude books being read, sorted by rank', () => {
-    expect(upNext(lib).map((x) => x.title)).toEqual(['B', 'A']);
-    expect(queue(lib).map((x) => x.title)).toEqual(['Q']);
-  });
+  const lib = [reading, a, b, done, old];
+  it('the queue excludes books being read, sorted by rank', () => expect(queue(lib).map((x) => x.title)).toEqual(['B', 'A']));
   it('reading', () => expect(readingNow(lib).map((x) => x.book.title)).toEqual(['Now']));
   it('history newest first, each read separately', () => expect(history(lib).map((x) => x.read.ended)).toEqual(['2026-05-01', '2026-01-05', '2025']));
   it('rankAt', () => {
@@ -87,25 +83,19 @@ describe('year stats', () => {
   });
 });
 
-describe('shelves', () => {
-  const next = Array.from({ length: 5 }, (_, i) => book({ title: `N${i}`, shelf: 'next', rank: i + 1 }));
-  const q1 = book({ title: 'Q1', shelf: 'queue', rank: 1 });
-  const q2 = book({ title: 'Q2', shelf: 'queue', rank: 2 });
-  it('promoting into a full Up Next sends its last book to the top of the queue', () => {
-    expect(planShelve([...next, q1, q2], q2.id, 'next', 'bottom')).toEqual([
-      { id: q2.id, shelf: 'next', rank: 6 },
-      { id: next[4].id, shelf: 'queue', rank: 0 },
-    ]);
+describe('queue', () => {
+  const q = Array.from({ length: 8 }, (_, i) => book({ title: `Q${i}`, rank: i + 1 }));
+  it('Up Next is the top five of the queue', () => expect(upNext(q).map((b) => b.title)).toEqual(['Q0', 'Q1', 'Q2', 'Q3', 'Q4']));
+  it('dragging #7 to #2 puts it between #1 and #2', () => {
+    const rest = queue(q).filter((b) => b.id !== q[6].id);
+    expect(rankAt(rest, 1)).toBe(1.5);
   });
-  it('with room, nothing is bumped', () => {
-    expect(planShelve([...next.slice(0, 3), q1], q1.id, 'next', 'bottom')).toEqual([{ id: q1.id, shelf: 'next', rank: 4 }]);
-  });
-  it('back to the queue goes on top', () => {
-    expect(planShelve([...next, q1], next[0].id, 'queue', 'top')).toEqual([{ id: next[0].id, shelf: 'queue', rank: 0 }]);
-  });
-  it('documents from older builds: pile_rank becomes Up Next', () => {
-    const b = normalizeBook({ id: 'x', title: 'Old', pile_rank: 3 });
-    expect([b.shelf, b.rank, b.reads, 'pile_rank' in b]).toEqual(['next', 3, [], false]);
+  it('documents from older builds keep their order', () => {
+    expect(normalizeBook({ id: 'x', title: 'Old', pile_rank: 3 })).toMatchObject({ rank: 3 });
+    // The two-shelf build: its queue goes after its Up Next.
+    expect(normalizeBook({ id: 'y', shelf: 'next', rank: 2 }).rank).toBe(2);
+    expect(normalizeBook({ id: 'z', shelf: 'queue', rank: 1 }).rank).toBe(1001);
+    expect('shelf' in normalizeBook({ id: 'z', shelf: 'queue', rank: 1 })).toBe(false);
   });
 });
 
@@ -125,10 +115,10 @@ describe('spreadsheet import', () => {
   ];
   const inc = sheetsToIncoming(sheets);
   it('maps rows to statuses', () => {
-    expect(inc.map((i) => [i.title, i.reads[0]?.status ?? 'shelf'])).toEqual([
+    expect(inc.map((i) => [i.title, i.reads[0]?.status ?? 'queue'])).toEqual([
       ['Train Dreams', 'finished'], ['All Fours', 'finished'],
       ["A Children's Bible", 'finished'], ['The Great Depression: A Diary', 'dnf'], ['Children of Memory', 'reading'],
-      ['Demons of Unrest', 'shelf'], ['The Houseguest and Other Stories', 'shelf'],
+      ['Demons of Unrest', 'queue'], ['The Houseguest and Other Stories', 'queue'],
     ]);
     expect(inc[0].reads[0].ended).toBe('2025');
     expect(inc[3].reads[0]).toMatchObject({ started: '2026-05-25', ended: '2026-05-25' });
@@ -138,19 +128,17 @@ describe('spreadsheet import', () => {
     expect(cellDate('1/5/2026')).toBe('2026-01-05');
     expect(cellDate('')).toBeNull();
   });
-  it('merge is idempotent and keeps shelf order', () => {
+  it('merge is idempotent and keeps queue order', () => {
     const plan = planMerge([], inc, 1000);
     expect(plan.creates).toHaveLength(7);
-    expect(plan.creates.filter((b) => b.shelf).map((b) => [b.title, b.shelf, b.rank])).toEqual([['Demons of Unrest', 'next', 1], ['The Houseguest and Other Stories', 'next', 2]]);
+    expect(plan.creates.filter((b) => b.rank != null).map((b) => [b.title, b.rank])).toEqual([['Demons of Unrest', 1], ['The Houseguest and Other Stories', 2]]);
     const again = planMerge(plan.creates, inc, 2000);
     expect(again.creates).toHaveLength(0);
     expect(again.updates).toHaveLength(0);
   });
-  it('Up Next overflows into the queue on import', () => {
-    const many = Array.from({ length: 7 }, (_, i) => ({ title: `Book ${i}`, author: 'X', reads: [], shelf: 'next' as const }));
-    const plan = planMerge([book({ shelf: 'next', rank: 1 })], many);
-    expect(plan.creates.filter((b) => b.shelf === 'next')).toHaveLength(4);
-    expect(plan.creates.filter((b) => b.shelf === 'queue').map((b) => b.title)).toEqual(['Book 4', 'Book 5', 'Book 6']);
+  it('imported books go to the bottom of an existing queue', () => {
+    const plan = planMerge([book({ rank: 4 })], [{ title: 'New', author: 'X', reads: [], queue: true }]);
+    expect(plan.creates[0].rank).toBe(5);
   });
   it('a re-read merges into the existing book', () => {
     const existing = [book({ title: 'A Visit from the Goon Squad', author: 'Jennifer Egan', reads: [read({ ended: '2019' })] })];

@@ -1,14 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { collection, doc, onSnapshot, setDoc, updateDoc, writeBatch, getDocs, query, limit, disableNetwork, enableNetwork, type DocumentData } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, updateDoc, writeBatch, getDocs, query, limit, disableNetwork, enableNetwork, deleteField, type DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
 import { forgetLibrary } from '../library';
-import type { Book, Read, Highlight, Shelf } from '../types';
-import { bottomRank, newId, normalizeBook, onShelf, planShelve } from '../lib/books';
+import type { Book, Read, Highlight } from '../types';
+import { bottomRank, newId, normalizeBook, queue } from '../lib/books';
 import type { MergePlan } from '../lib/importer';
 import { today } from '../lib/dates';
 import { titleCase, nameCase } from '../lib/titlecase';
 
-export type BookPatch = Partial<Pick<Book, 'title' | 'author' | 'reads' | 'shelf' | 'rank' | 'highlights' | 'deleted_at'>>;
+export type BookPatch = Partial<Pick<Book, 'title' | 'author' | 'reads' | 'rank' | 'highlights' | 'deleted_at'>>;
 
 export interface Store {
   lid: string;
@@ -20,13 +20,13 @@ export interface Store {
   /** A local write has waited more than ~2 s for the server. */
   pending: boolean;
   online: boolean;
-  addBook: (b: { title: string; author: string; reads?: Omit<Read, 'id'>[]; shelf?: Shelf }) => string;
+  addBook: (b: { title: string; author: string; reads?: Omit<Read, 'id'>[]; queue?: boolean }) => string;
   update: (id: string, patch: BookPatch) => void;
   startReading: (id: string, started?: string) => void;
   endRead: (id: string, readId: string, end: { status: 'finished' | 'dnf'; ended: string; note: string }) => void;
-  /** Puts a book on a shelf; resolves with the book bumped from a full Up Next, if any. */
-  shelve: (id: string, shelf: Shelf, at?: 'top' | 'bottom') => Book | undefined;
-  unshelve: (id: string) => void;
+  /** Adds a book to the bottom of the queue. */
+  enqueue: (id: string) => void;
+  dequeue: (id: string) => void;
   addHighlights: (id: string, hs: Highlight[]) => void;
   remove: (id: string) => void;
   restore: (id: string) => void;
@@ -105,16 +105,17 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
 
   // Writes are fire-and-forget: the local cache applies instantly and syncs when there's signal.
   const update = useCallback((id: string, patch: BookPatch) => {
-    void updateDoc(doc(booksCol, id), { ...patch, updated_at: Date.now() });
+    // Writing a rank also drops the old two-shelf field, so normalizeBook stops offsetting it.
+    void updateDoc(doc(booksCol, id), { ...patch, ...('rank' in patch ? { shelf: deleteField() } : {}), updated_at: Date.now() });
   }, [booksCol]);
 
-  const addBook = useCallback<Store['addBook']>(({ title, author, reads = [], shelf }) => {
+  const addBook = useCallback<Store['addBook']>(({ title, author, reads = [], queue: queued }) => {
     const id = newId();
     const now = Date.now();
     const book: Omit<Book, 'id'> = {
       title: titleCase(title), author: nameCase(author),
       reads: reads.map((r) => ({ ...r, id: newId() })),
-      shelf: shelf ?? null, rank: shelf ? bottomRank(onShelf(booksRef.current, shelf)) : null,
+      rank: queued ? bottomRank(queue(booksRef.current)) : null,
       highlights: [], created_at: now, updated_at: now, deleted_at: null,
     };
     void setDoc(doc(booksCol, id), book);
@@ -124,7 +125,7 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   const startReading = useCallback((id: string, started = today()) => {
     const b = ref.current.get(id);
     if (!b) return;
-    update(id, { reads: [...b.reads, { id: newId(), status: 'reading', started, ended: null, note: '' }], shelf: null, rank: null });
+    update(id, { reads: [...b.reads, { id: newId(), status: 'reading', started, ended: null, note: '' }], rank: null });
   }, [update]);
 
   const endRead = useCallback<Store['endRead']>((id, readId, end) => {
@@ -133,12 +134,8 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
     update(id, { reads: b.reads.map((r) => (r.id === readId ? { ...r, ...end } : r)) });
   }, [update]);
 
-  const shelve = useCallback<Store['shelve']>((id, shelf, at = 'bottom') => {
-    const moves = planShelve(booksRef.current, id, shelf, at);
-    for (const m of moves) update(m.id, { shelf: m.shelf, rank: m.rank });
-    return moves[1] ? ref.current.get(moves[1].id) : undefined;
-  }, [update]);
-  const unshelve = useCallback((id: string) => update(id, { shelf: null, rank: null }), [update]);
+  const enqueue = useCallback((id: string) => update(id, { rank: bottomRank(queue(booksRef.current).filter((b) => b.id !== id)) }), [update]);
+  const dequeue = useCallback((id: string) => update(id, { rank: null }), [update]);
 
   const addHighlights = useCallback((id: string, hs: Highlight[]) => {
     const b = ref.current.get(id);
@@ -152,7 +149,7 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   const applyMerge = useCallback(async (plan: MergePlan) => {
     const now = Date.now();
     await inBatches(plan.creates, (batch, b) => { const { id, ...rest } = b; batch.set(doc(booksCol, id), rest); });
-    await inBatches(plan.updates, (batch, u) => batch.update(doc(booksCol, u.id), { reads: u.reads, shelf: u.shelf, rank: u.rank, updated_at: now }));
+    await inBatches(plan.updates, (batch, u) => batch.update(doc(booksCol, u.id), { reads: u.reads, rank: u.rank, shelf: deleteField(), updated_at: now }));
   }, [booksCol]);
 
   const putBooks = useCallback(async (list: Book[]) => {
@@ -172,8 +169,8 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   }, [booksCol]);
 
   const value = useMemo<Store>(() => ({
-    lid, books, byId, loaded, pending, online, addBook, update, startReading, endRead, shelve, unshelve, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary,
-  }), [lid, books, byId, loaded, pending, online, addBook, update, startReading, endRead, shelve, unshelve, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary]);
+    lid, books, byId, loaded, pending, online, addBook, update, startReading, endRead, enqueue, dequeue, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary,
+  }), [lid, books, byId, loaded, pending, online, addBook, update, startReading, endRead, enqueue, dequeue, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

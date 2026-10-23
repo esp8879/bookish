@@ -1,5 +1,5 @@
 import type { Book } from '../types';
-import { history, normalizeBook, queue, readingNow, upNext } from './books';
+import { history, normalizeBook, queue, readingNow, UP_NEXT } from './books';
 import { fmtRange, yearOf } from './dates';
 
 export const EXPORT_FORMAT = 'books-export';
@@ -23,15 +23,14 @@ const csvCell = (v: string | number | null | undefined) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-/** One row per read, plus one row per Up Next and queued book. Opens in any spreadsheet. */
+/** One row per read, plus one row per queued book (the first five marked up next). Opens in any spreadsheet. */
 export function toCSV(books: Book[]): string {
   const rows: (string | number | null)[][] = [['title', 'author', 'status', 'started', 'ended', 'note', 'highlights']];
   const live = books.filter((b) => !b.deleted_at);
   for (const b of live) for (const r of b.reads) {
     rows.push([b.title, b.author, r.status, r.started, r.ended, r.note, b.highlights.length || '']);
   }
-  upNext(live).forEach((b) => rows.push([b.title, b.author, 'up next', null, null, '', b.highlights.length || '']));
-  queue(live).forEach((b) => rows.push([b.title, b.author, 'queue', null, null, '', b.highlights.length || '']));
+  queue(live).forEach((b, i) => rows.push([b.title, b.author, i < UP_NEXT ? 'up next' : 'queue', null, null, '', b.highlights.length || '']));
   return rows.map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
 }
 
@@ -45,7 +44,8 @@ export function toMarkdown(books: Book[]): string {
     for (const { book, read } of reading) out.push(`- **${book.title}** — ${book.author} (${fmtRange(read.started, null)})`);
     out.push('');
   }
-  for (const [name, list] of [['Up Next', upNext(live)], ['Queue', queue(live)]] as const) {
+  const q = queue(live);
+  for (const [name, list] of [['Up Next', q.slice(0, UP_NEXT)], ['Queue', q.slice(UP_NEXT)]] as const) {
     if (!list.length) continue;
     out.push(`## ${name}`, '');
     for (const b of list) out.push(`- **${b.title}** — ${b.author}`);

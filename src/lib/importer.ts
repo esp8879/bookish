@@ -1,18 +1,18 @@
-import type { Book, Read, Shelf } from '../types';
-import { bookKey, newId, onShelf, UP_NEXT_MAX } from './books';
+import type { Book, Read } from '../types';
+import { bookKey, bottomRank, newId, queue } from './books';
 
 /** A book as described by an import source, before it is merged into the library. */
 export interface Incoming {
   title: string;
   author: string;
   reads: Omit<Read, 'id'>[];
-  /** Goes to the bottom of that shelf, in the order given. Up Next overflows into the queue. */
-  shelf?: Shelf;
+  /** Goes to the bottom of the queue, in the order given. */
+  queue?: boolean;
 }
 
 export interface MergePlan {
   creates: Book[];
-  updates: { id: string; reads: Read[]; shelf: Shelf | null; rank: number | null }[];
+  updates: { id: string; reads: Read[]; rank: number | null }[];
   skipped: number;
 }
 
@@ -28,15 +28,13 @@ export function planMerge(existing: Book[], incoming: Incoming[], now = Date.now
   const working = new Map<string, Book>();
   const touched = new Set<string>();
   const created = new Set<string>();
-  const next = onShelf(existing, 'next'), queued = onShelf(existing, 'queue');
-  let nextCount = next.length;
-  const rank = { next: Math.max(0, ...next.map((b) => b.rank ?? 0)) + 1, queue: Math.max(0, ...queued.map((b) => b.rank ?? 0)) + 1 };
+  let rank = bottomRank(queue(existing));
   let skipped = 0;
   incoming.forEach((inc, i) => {
     const key = bookKey(inc.title, inc.author);
     let book = working.get(key) ?? (byKey.has(key) ? structuredClone(byKey.get(key)!) : undefined);
     if (!book) {
-      book = { id: newId(), title: inc.title, author: inc.author, reads: [], shelf: null, rank: null, highlights: [], created_at: now + i, updated_at: now, deleted_at: null };
+      book = { id: newId(), title: inc.title, author: inc.author, reads: [], rank: null, highlights: [], created_at: now + i, updated_at: now, deleted_at: null };
       created.add(key);
     }
     working.set(key, book);
@@ -46,13 +44,8 @@ export function planMerge(existing: Book[], incoming: Incoming[], now = Date.now
       book.reads.push({ ...r, id: newId() });
       changed = true;
     }
-    if (inc.shelf && book.shelf == null && !book.reads.some((r) => r.status === 'reading')) {
-      const s: Shelf = inc.shelf === 'next' && nextCount < UP_NEXT_MAX ? 'next' : 'queue';
-      if (s === 'next') nextCount++;
-      book.shelf = s;
-      book.rank = rank[s]++;
-      changed = true;
-    } else if (inc.shelf) skipped++;
+    if (inc.queue && book.rank == null && !book.reads.some((r) => r.status === 'reading')) { book.rank = rank++; changed = true; }
+    else if (inc.queue) skipped++;
     if (changed) touched.add(key);
   });
   const plan: MergePlan = { creates: [], updates: [], skipped };
@@ -61,7 +54,7 @@ export function planMerge(existing: Book[], incoming: Incoming[], now = Date.now
     // Keep reads in chronological order so the book page reads top to bottom.
     b.reads.sort((x, y) => (x.started ?? x.ended ?? '').localeCompare(y.started ?? y.ended ?? ''));
     if (created.has(key)) plan.creates.push(b);
-    else plan.updates.push({ id: b.id, reads: b.reads, shelf: b.shelf, rank: b.rank });
+    else plan.updates.push({ id: b.id, reads: b.reads, rank: b.rank });
   }
   return plan;
 }

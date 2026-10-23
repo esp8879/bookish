@@ -2,7 +2,6 @@
 export type PartialDate = string;
 
 export type ReadStatus = 'reading' | 'finished' | 'dnf';
-export type Shelf = 'next' | 'queue';
 
 export interface Read {
   id: string;
@@ -27,9 +26,7 @@ export interface Book {
   title: string;
   author: string;
   reads: Read[];
-  /** Up Next (at most UP_NEXT_MAX, shown on Home) or the long Queue; null when on neither. */
-  shelf: Shelf | null;
-  /** Order within the shelf, ascending (fractional, so a move writes one document). */
+  /** Position in the queue, ascending (fractional, so a move writes one document); null when not queued. The first UP_NEXT books are Up Next. */
   rank: number | null;
   highlights: Highlight[];
   created_at: number;

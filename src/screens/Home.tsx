@@ -1,17 +1,18 @@
 import { useMemo } from 'react';
 import { useStore } from '../data/store';
 import { useUI } from '../ui';
-import { daysIn, queue, readingNow, upNext, UP_NEXT_MAX } from '../lib/books';
+import { daysIn, queue, readingNow, UP_NEXT } from '../lib/books';
 import { Label } from '../components/common';
-import { ShelfList } from '../components/ShelfList';
+import { QueueList } from '../components/QueueList';
 import { SyncMark } from '../components/SyncMark';
 
 export function Home() {
   const { books, loaded } = useStore();
-  const { openBook, setAdding, setFinishing, setTab } = useUI();
+  const { openBook, setFinishing, setTab } = useUI();
   const reading = useMemo(() => readingNow(books), [books]);
-  const up = useMemo(() => upNext(books), [books]);
-  const queued = useMemo(() => queue(books).length, [books]);
+  const q = useMemo(() => queue(books), [books]);
+  const up = q.slice(0, UP_NEXT);
+  const more = q.length - up.length;
 
   const empty = loaded && books.length === 0;
 
@@ -25,8 +26,8 @@ export function Home() {
       {empty && (
         <section className="empty">
           <p>Nothing here yet.</p>
-          <p className="muted">Add the book you're reading, or bring in your spreadsheet from Settings.</p>
-          <button className="btn primary" onClick={() => setAdding('queue')}>Add a book</button>
+          <p className="muted">Add books on the Queue tab, or bring in your spreadsheet from Settings.</p>
+          <button className="btn primary" onClick={() => setTab('queue')}>Go to the queue</button>
         </section>
       )}
 
@@ -52,11 +53,11 @@ export function Home() {
 
       {loaded && !empty && (
         <section>
-          <Label right={<button className="btn link small" onClick={() => setAdding('next')}>Add</button>}>Up Next</Label>
-          {up.length ? <ShelfList books={up} /> : <p className="muted small pad">Nothing lined up. Pick a few from your queue.</p>}
-          {queued > 0 && (
+          <Label>Up Next</Label>
+          {up.length ? <QueueList books={up} queue={q} /> : <p className="muted small pad">The queue is empty. Add books on the Queue tab.</p>}
+          {up.length > 0 && (
             <button className="queue-link" onClick={() => setTab('queue')}>
-              <span>{up.length < UP_NEXT_MAX ? `${UP_NEXT_MAX - up.length} open ${UP_NEXT_MAX - up.length === 1 ? 'spot' : 'spots'} · ` : ''}{queued} in your queue</span><span aria-hidden>›</span>
+              <span>{more > 0 ? `${more} more in the queue` : 'Open the queue'}</span><span aria-hidden>›</span>
             </button>
           )}
         </section>

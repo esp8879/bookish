@@ -68,7 +68,7 @@ function SearchResults({ items, q }: { items: HistoryItem[]; q: string }) {
 }
 
 /** Everything finished or set aside: a year at a time, with that year's numbers on top. */
-export function Read() {
+export function Stats() {
   const { books } = useStore();
   const ys = useMemo(() => years(books), [books]);
   const [year, setYear] = useState(ys[0]);

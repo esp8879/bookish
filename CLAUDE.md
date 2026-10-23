@@ -10,7 +10,7 @@ Personal reading log, mobile-first PWA replacing `book tracker.xlsx`. Spec: `boo
 No accounts. The library id in the URL path (`/l/<24+ char token>`) is the secret, cached in localStorage (`books.lid`, `src/library.ts`). `scripts/postbuild.mjs` strips `start_url` from the manifest so iOS Add to Home Screen keeps the path. `firestore.rules` only allows `libraries/{lid}/**` for well-formed ids.
 
 ## Data
-- One collection, `libraries/{lid}/books/{id}`: title (Title Case), author, `reads[]` (status reading|finished|dnf, started/ended as `YYYY-MM-DD` or `YYYY`, one note), `shelf` (`next` = Up Next, max 5, on Home; `queue` = the long someday list) + `rank` (fractional order within the shelf; `planShelve` in `src/lib/books.ts` handles the cap by bumping Up Next's last book to the top of the queue; `normalizeBook` maps the old `pile_rank` field to Up Next), `highlights[]`, soft delete via `deleted_at`. Types in `src/types.ts`.
+- One collection, `libraries/{lid}/books/{id}`: title (Title Case), author, `reads[]` (status reading|finished|dnf, started/ended as `YYYY-MM-DD` or `YYYY`, one note), `rank` (fractional position in the one queue, null when not queued; Up Next is just `queue(books).slice(0, UP_NEXT)`, so dragging on Home or the Queue tab edits the same order; `normalizeBook` maps older `pile_rank`/`shelf` documents into it), `highlights[]`, soft delete via `deleted_at`. Types in `src/types.ts`.
 - Dates are plain calendar strings; no timezone logic anywhere (`src/lib/dates.ts`).
 - The whole library is one listener; the Firestore persistent cache makes every screen and write work offline. Writes are fire-and-forget (not awaited). `hasPendingWrites` drives the "Not synced yet" mark.
 - Pure logic lives in `src/lib/` and is tested in `src/lib/__tests__/` (title case, dates, derived lists, year stats, spreadsheet + clippings import, merge idempotency, export).
@@ -20,6 +20,10 @@ No accounts. The library id in the URL path (`/l/<24+ char token>`) is the secre
 - `npm run deploy` = build + `firebase deploy --only hosting,firestore`
 - `node scripts/icons.mjs` (after `npm i --no-save playwright-core`) rasterizes `public/icon.svg`.
 
+## Screens
+Tabs: Books (Reading + Up Next = top 5 of the queue, no adding) · Queue (the whole ordered queue, adding happens only here, new books at the bottom) · Stats (year numbers + that year's books, search across years) · Settings.
+
 ## Conventions
 - Look: paper `#F5F0E6`, ink `#2B2520`, library green `#3F5B4A` (dark theme follows the system). Literata (self-hosted in `public/fonts`) for titles, notes and highlights; system sans for UI; small-caps letter-spaced section labels; hairline rules, no cards or shadows, no emoji, no textures.
+- Update prompt: `applyUpdate()` in `src/sw.ts` posts SKIP_WAITING to the waiting worker itself and reloads on `controllerchange` (with a timeout fallback). The plugin's `updateSW(true)` doesn't reload for builds workbox labels "external", which is how they often arrive in iOS home-screen apps.
 - Personal data (`*.xlsx`, `My Clippings*.txt`) is gitignored and must never be bundled into `dist/` or `public/`.

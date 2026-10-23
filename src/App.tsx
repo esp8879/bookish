@@ -4,17 +4,18 @@ import { StoreProvider } from './data/store';
 import { createLibrary, openLibrary, resolveLid } from './library';
 import { UIProvider, useUI, type Tab } from './ui';
 import { Home } from './screens/Home';
-import { Read } from './screens/Read';
+import { Stats } from './screens/Stats';
 import { Queue } from './screens/Queue';
 import { Settings } from './screens/Settings';
 import { BookPage } from './components/BookPage';
 import { AddBook } from './components/AddBook';
 import { FinishFlow } from './components/FinishFlow';
 
-const TABS: { id: Tab; label: string }[] = [{ id: 'books', label: 'Books' }, { id: 'queue', label: 'Queue' }, { id: 'read', label: 'Read' }, { id: 'settings', label: 'Settings' }];
+const TABS: { id: Tab; label: string }[] = [{ id: 'books', label: 'Books' }, { id: 'queue', label: 'Queue' }, { id: 'stats', label: 'Stats' }, { id: 'settings', label: 'Settings' }];
 
 function UpdatePrompt() {
   const [ready, setReady] = useState(updateReady);
+  const [updating, setUpdating] = useState(false);
   useEffect(() => { const on = () => setReady(true); window.addEventListener('books:update', on); return () => window.removeEventListener('books:update', on); }, []);
   if (!ready) return null;
   return (
@@ -22,7 +23,7 @@ function UpdatePrompt() {
       <div className="update-card">
         <h2>A new version is ready</h2>
         <p className="muted">Update to get the latest version of Books.</p>
-        <button className="btn primary block" onClick={() => void applyUpdate(true)}>Update now</button>
+        <button className="btn primary block" disabled={updating} onClick={() => { setUpdating(true); void applyUpdate(); }}>{updating ? 'Updating…' : 'Update now'}</button>
       </div>
     </div>
   );
@@ -34,13 +35,13 @@ function Shell() {
     <div className="app">
       {tab === 'books' && <Home />}
       {tab === 'queue' && <Queue />}
-      {tab === 'read' && <Read />}
+      {tab === 'stats' && <Stats />}
       {tab === 'settings' && <Settings />}
       {bookId && <BookPage key={bookId} id={bookId} />}
       <nav className="tabbar"><div>
         {TABS.map((t) => <button key={t.id} className={tab === t.id && !bookId ? 'on' : ''} onClick={() => setTab(t.id)}>{t.label}</button>)}
       </div></nav>
-      {adding && <AddBook shelf={adding} />}
+      {adding && <AddBook />}
       {finishing && <FinishFlow bookId={finishing.bookId} readId={finishing.readId} />}
       <UpdatePrompt />
     </div>

@@ -1,15 +1,17 @@
-import type { Book, Read, Shelf } from '../types';
+import type { Book, Read } from '../types';
 import { daysBetween, isFullDate, today, yearOf } from './dates';
 
 export const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
 
-/** Fill defaults for documents written by older builds (Up Next used to be `pile_rank`). */
-export function normalizeBook(raw: Partial<Book> & { id: string; pile_rank?: number | null }): Book {
-  const { pile_rank, ...b } = raw;
+/** Fill defaults for documents written by older builds. */
+export function normalizeBook(raw: Partial<Book> & { id: string; pile_rank?: number | null; shelf?: string | null }): Book {
+  const { pile_rank, shelf, ...b } = raw;
+  let rank = b.rank ?? pile_rank ?? null;
+  // One build kept Up Next and the queue as separate shelves with overlapping ranks: put the old queue after Up Next.
+  if (rank != null && shelf === 'queue') rank += 1000;
   return {
     title: '', author: '', created_at: 0, updated_at: 0, deleted_at: null, ...b,
-    reads: b.reads ?? [], highlights: b.highlights ?? [],
-    shelf: b.shelf ?? (pile_rank != null ? 'next' : null), rank: b.rank ?? pile_rank ?? null,
+    reads: b.reads ?? [], highlights: b.highlights ?? [], rank,
   };
 }
 
@@ -26,14 +28,14 @@ export function readingNow(books: Book[]): ReadingItem[] {
   return out.sort((a, b) => (b.read.started ?? '').localeCompare(a.read.started ?? '') || b.book.created_at - a.book.created_at);
 }
 
-export const UP_NEXT_MAX = 5;
+/** Up Next is simply the top of the queue. */
+export const UP_NEXT = 5;
 
-/** A shelf in rank order. A book being read is never on a shelf. */
-export function onShelf(books: Book[], shelf: Shelf): Book[] {
-  return books.filter((b) => b.shelf === shelf && !currentRead(b)).sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
+/** The queue in order. A book being read is never queued. */
+export function queue(books: Book[]): Book[] {
+  return books.filter((b) => b.rank != null && !currentRead(b)).sort((a, b) => a.rank! - b.rank!);
 }
-export const upNext = (books: Book[]) => onShelf(books, 'next');
-export const queue = (books: Book[]) => onShelf(books, 'queue');
+export const upNext = (books: Book[]) => queue(books).slice(0, UP_NEXT);
 
 /** Every finished or abandoned read, newest first. Year-only dates sort after dated reads of the same year. */
 export function history(books: Book[]): HistoryItem[] {
@@ -53,23 +55,6 @@ export function rankAt(list: Book[], index: number): number {
 }
 
 export const bottomRank = (list: Book[]) => (list.length ? Math.max(...list.map((b) => b.rank ?? 0)) + 1 : 1);
-export const topRank = (list: Book[]) => (list.length ? Math.min(...list.map((b) => b.rank ?? 0)) - 1 : 1);
-
-export interface ShelfMove { id: string; shelf: Shelf | null; rank: number | null }
-
-/**
- * Put a book on a shelf, at its top or bottom. Up Next holds UP_NEXT_MAX books: when it's full,
- * its last book goes back to the top of the queue to make room.
- */
-export function planShelve(books: Book[], id: string, shelf: Shelf, at: 'top' | 'bottom'): ShelfMove[] {
-  const list = onShelf(books, shelf).filter((b) => b.id !== id);
-  const moves: ShelfMove[] = [{ id, shelf, rank: at === 'top' ? topRank(list) : bottomRank(list) }];
-  if (shelf === 'next' && list.length >= UP_NEXT_MAX) {
-    const bumped = list[list.length - 1];
-    moves.push({ id: bumped.id, shelf: 'queue', rank: topRank(queue(books).filter((b) => b.id !== id)) });
-  }
-  return moves;
-}
 
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 export const bookKey = (title: string, author: string) => `${norm(title)}|${norm(author)}`;

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { useStore } from '../data/store';
 import { useUI } from '../ui';
-import { queue, upNext } from '../lib/books';
+import { queue, UP_NEXT } from '../lib/books';
 import { today } from '../lib/dates';
 import { DateField, Field, Grow, Seg, Sheet } from './common';
 
-/** Finish → done or DNF → note → "What's next?" from Up Next, with the queue a tap away. */
+/** Finish → done or DNF (optionally back to the queue) → note → "What's next?" from Up Next, with the queue a tap away. */
 export function FinishFlow({ bookId, readId }: { bookId: string; readId: string }) {
-  const { byId, books, endRead, startReading } = useStore();
+  const { byId, books, endRead, startReading, enqueue } = useStore();
   const { setFinishing, toast } = useUI();
   const book = byId.get(bookId);
   const read = book?.reads.find((r) => r.id === readId);
@@ -16,14 +16,15 @@ export function FinishFlow({ bookId, readId }: { bookId: string; readId: string 
   const [note, setNote] = useState(read?.note ?? '');
   const [step, setStep] = useState<'end' | 'next'>('end');
   const [all, setAll] = useState(false);
+  const [requeue, setRequeue] = useState(false);
   const close = () => setFinishing(null);
   if (!book || !read) return null;
 
-  const up = upNext(books);
-  const queued = queue(books);
+  const q = queue(books).filter((b) => b.id !== bookId);
   const save = () => {
     endRead(book.id, read.id, { status, ended: ended || today(), note: note.trim() });
-    if (up.length || queued.length) setStep('next');
+    if (status === 'dnf' && requeue) enqueue(book.id);
+    if (q.length) setStep('next');
     else { close(); toast(status === 'finished' ? `Finished ${book.title}` : `Set ${book.title} aside`); }
   };
   const start = (id: string) => {
@@ -33,7 +34,7 @@ export function FinishFlow({ bookId, readId }: { bookId: string; readId: string 
   };
 
   if (step === 'next') {
-    const list = all ? [...up, ...queued] : up.length ? up : queued.slice(0, 5);
+    const list = all ? q : q.slice(0, UP_NEXT);
     return (
       <Sheet title="What's next?" onClose={close}>
         <ul className="list next-list">
@@ -44,8 +45,7 @@ export function FinishFlow({ bookId, readId }: { bookId: string; readId: string 
             </li>
           ))}
         </ul>
-        {!all && queued.length > 0 && up.length > 0 && <button className="btn link" onClick={() => setAll(true)}>Show the queue too ({queued.length})</button>}
-        {!all && !up.length && queued.length > 5 && <button className="btn link" onClick={() => setAll(true)}>See all {queued.length}</button>}
+        {!all && q.length > UP_NEXT && <button className="btn link" onClick={() => setAll(true)}>See the whole queue ({q.length})</button>}
         <button className="btn block" onClick={close}>Not now</button>
       </Sheet>
     );
@@ -55,6 +55,12 @@ export function FinishFlow({ bookId, readId }: { bookId: string; readId: string 
     <Sheet title={book.title} onClose={close}>
       <Seg options={[{ value: 'finished', label: 'Finished' }, { value: 'dnf', label: "Didn't finish" }]} value={status} onChange={setStatus} />
       <DateField label={status === 'finished' ? 'Finished on' : 'Stopped on'} value={ended} onChange={(v) => setEnded(v ?? today())} />
+      {status === 'dnf' && (
+        <label className="check">
+          <input type="checkbox" checked={requeue} onChange={(e) => setRequeue(e.target.checked)} />
+          <span>Back to the bottom of the queue, to try again someday</span>
+        </label>
+      )}
       <Field label="Note">
         <Grow value={note} onChange={setNote} autoFocus placeholder={status === 'finished' ? 'What did you think?' : 'Why did you stop?'} />
       </Field>

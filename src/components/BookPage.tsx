@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../data/store';
 import { useUI } from '../ui';
 import type { Book, Read, ReadStatus } from '../types';
-import { currentRead, daysIn } from '../lib/books';
+import { currentRead, daysIn, queue, UP_NEXT } from '../lib/books';
 import { fmtRange, today } from '../lib/dates';
 import { highlightId } from '../lib/clippings';
 import { titleCase, nameCase } from '../lib/titlecase';
@@ -59,11 +59,8 @@ export function BookPage({ id }: { id: string }) {
   if (!book || book.deleted_at) return null;
   const now = currentRead(book);
   const last = book.reads[book.reads.length - 1];
-  const shelf = now ? null : book.shelf;
-  const moveTo = (s: 'next' | 'queue') => {
-    const bumped = store.shelve(book.id, s, s === 'queue' ? 'top' : 'bottom');
-    toast(s === 'queue' ? 'Moved to the queue' : bumped ? `Up next. ${bumped.title} went back to the queue.` : 'Up next');
-  };
+  const pos = now ? -1 : queue(store.books).findIndex((b) => b.id === book.id);
+  const queued = pos >= 0;
 
   const del = () => {
     store.remove(book.id);
@@ -108,17 +105,17 @@ export function BookPage({ id }: { id: string }) {
         <header className="book-head">
           <h1 className="book-title">{book.title}</h1>
           {book.author && <div className="book-author">{book.author}</div>}
+          {queued && <div className="book-pos">{pos < UP_NEXT ? `Up Next · #${pos + 1}` : `#${pos + 1} in the queue`}</div>}
         </header>
       )}
 
       <div className="book-actions">
         {now && <button className="btn primary" onClick={() => setFinishing({ bookId: book.id, readId: now.id })}>Finish</button>}
-        {!now && <button className={`btn${shelf ? ' primary' : ''}`} onClick={() => { store.startReading(book.id); toast(`Started ${book.title}`); }}>
-          {shelf || !last ? 'Start reading' : last.status === 'dnf' ? 'Try again' : 'Read again'}
+        {!now && <button className={`btn${queued ? ' primary' : ''}`} onClick={() => { store.startReading(book.id); toast(`Started ${book.title}`); }}>
+          {queued || !last ? 'Start reading' : last.status === 'dnf' ? 'Try again now' : 'Read again'}
         </button>}
-        {!now && shelf !== 'next' && <button className="btn" onClick={() => moveTo('next')}>{shelf === 'queue' ? 'Move to Up Next' : 'Add to Up Next'}</button>}
-        {!now && shelf !== 'queue' && <button className="btn" onClick={() => moveTo('queue')}>{shelf === 'next' ? 'Back to queue' : 'Add to queue'}</button>}
-        {shelf && <button className="btn" onClick={() => { store.unshelve(book.id); toast(shelf === 'next' ? 'Removed from Up Next' : 'Removed from the queue'); }}>Remove</button>}
+        {!now && !queued && <button className="btn" onClick={() => { store.enqueue(book.id); toast('Added to the bottom of the queue'); }}>{last?.status === 'dnf' ? 'Back to the queue' : 'Add to the queue'}</button>}
+        {queued && <button className="btn" onClick={() => { store.dequeue(book.id); toast('Removed from the queue'); }}>Remove from queue</button>}
       </div>
 
       {book.reads.length > 0 && (
