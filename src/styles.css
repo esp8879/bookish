@@ -10,6 +10,8 @@
   --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
   --drawers-h: 48px;
   --gutter: 20px;
+  /* Space above the first row of every screen; the fixed nav bar starts its content at the same height. */
+  --top-pad: calc(max(16px, env(safe-area-inset-top)) + 4px);
   --section: 32px;
   color-scheme: light;
 }
@@ -45,15 +47,17 @@ em { font-style: italic; }
 /* --- layout ------------------------------------------------------------- */
 /* One spacing scale on every screen: 20px gutters, 32px between sections, 12px row padding, 44px controls. */
 .app { max-width: 600px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; }
-.screen, .page { padding: calc(max(16px, env(safe-area-inset-top)) + 4px) var(--gutter) calc(48px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--section); }
+.screen, .page { padding: var(--top-pad) var(--gutter) calc(48px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--section); }
 
 /* Every screen but the main one: nav row (back left, one action right), then the title row. */
 /* The header's box is dissolved so its nav row's sticky range is the whole screen, not just the header. */
 .screen-head { display: contents; }
 .screen-title { margin-top: calc(6px - var(--section)); }
-/* Pinned nav row: stays at the top while the screen scrolls; a soft fade appears under it once content passes beneath. */
-.screen-nav { position: sticky; top: 0; z-index: 25; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 52px;
-  margin: 0 calc(-1 * var(--gutter)); padding: 8px var(--gutter); background: var(--paper); }
+/* Fixed nav row: never moves while the screen scrolls; paper fills everything above it, and a soft fade appears under it once content passes beneath. */
+.screen-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 25; max-width: 600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: calc(var(--top-pad) + 8px) var(--gutter) 8px; background: var(--paper); }
+/* Holds the nav's place in the flow, so the title sits exactly where it would under a nav that scrolled. */
+.screen-nav-space { height: 52px; flex-shrink: 0; }
 .screen-nav::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 22px; pointer-events: none; opacity: 0; transition: opacity .15s;
   background: linear-gradient(to bottom, rgb(var(--paper-rgb)), rgb(var(--paper-rgb) / 0)); }
 .screen-nav.scrolled::after { opacity: 1; }
@@ -75,7 +79,7 @@ em { font-style: italic; }
 /* Main screen on a phone: pinned to the viewport, never scrolled by the page (it scrolls itself only if it ever
    overflows), sized to fit an iPhone 17 Pro with two books reading and five up next. */
 .screen.home { position: fixed; inset: 0; max-width: 600px; margin: 0 auto; overflow-y: auto; overscroll-behavior: contain;
-  gap: 28px; padding-top: calc(max(16px, env(safe-area-inset-top)) + 10px); padding-bottom: calc(env(safe-area-inset-bottom) + 18px); }
+  gap: 28px; padding-top: calc(var(--top-pad) + 8px); padding-bottom: calc(env(safe-area-inset-bottom) + 18px); }
 .screen.home .list:not(.two) .reading-row .row-main { padding: 14px 0 15px; }
 .screen.home .label { min-height: 26px; margin-bottom: 0; }
 .screen.home .reading-row .row-main { padding: 11px 0 12px; }
@@ -106,8 +110,9 @@ em { font-style: italic; }
 
 /* Main screen head: the mini book·ish and the sync state on one line, the ledger (day and the year's count) beneath,
    like the head of a diary page. */
-.home-head { display: flex; flex-direction: column; gap: 6px; }
-.home-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.home-head { display: flex; flex-direction: column; gap: 4px; }
+/* Same height and position as the nav bar on every other screen, so all headers line up. */
+.home-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 36px; }
 .ledger { font-size: 13px; font-weight: 600; font-variant: all-small-caps; letter-spacing: .09em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Card-catalog drawer label: small caps, a hairline to the edge. */
@@ -298,7 +303,7 @@ section > p.small { margin-top: 8px; }
 
 /* Short screens (mobile Safari with its toolbars, smaller phones): tighten the main screen so it still fits without scrolling. */
 @media (max-height: 740px) {
-  .screen.home { gap: 18px; padding-top: calc(max(12px, env(safe-area-inset-top)) + 6px); padding-bottom: calc(env(safe-area-inset-bottom) + 8px); }
+  .screen.home { gap: 16px; padding-bottom: calc(env(safe-area-inset-bottom) + 8px); }
   .screen.home .list:not(.two) .reading-row .row-main { padding: 9px 0 10px; }
   .screen.home .reading-row .row-main { padding: 8px 0 9px; }
   .screen.home .shelf .row-main { padding: 7px 0 8px; }
@@ -325,10 +330,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
 
 /* --- wide screens (Mac, iPad) --------------------------------------------- */
 @media (min-width: 700px) {
-  .screen, .page { padding-top: 48px; }
+  :root { --top-pad: 48px; }
   /* Layout and spacing stay exactly as on a phone (drawers row pinned at the bottom, the same band on drawer screens);
      only the top padding opens up a little. */
-  .screen.home { padding-top: 40px; }
   /* Sheets become centred dialogs rather than bottom sheets. */
   .sheet { top: 12vh; bottom: auto; max-height: 76vh; border: 1px solid var(--rule); border-radius: 14px; padding-bottom: 24px; box-shadow: 0 24px 60px rgba(29, 25, 21, .22); }
 }

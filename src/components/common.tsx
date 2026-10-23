@@ -55,8 +55,8 @@ export function Sheet({ title, onClose, children, action }: { title: string; onC
 
 /**
  * The top of every screen but the main one: a nav row with back on the left (named for where it goes)
- * and the screen's one action on the right, then the title row. The nav row stays pinned while the screen
- * scrolls, with a soft fade beneath it once content is passing under.
+ * and the screen's one action on the right, then the title row. The nav row is fixed in place (a spacer keeps its
+ * spot in the flow), with a soft fade beneath it once content is passing under.
  */
 export function ScreenHeader({ back, action, children }: { back: { label: string; onClick: () => void }; action?: ReactNode; children: ReactNode }) {
   const nav = useRef<HTMLDivElement>(null);
@@ -72,6 +72,7 @@ export function ScreenHeader({ back, action, children }: { back: { label: string
   }, []);
   return (
     <header className="screen-head">
+      <div className="screen-nav-space" aria-hidden />
       <div ref={nav} className={`screen-nav${scrolled ? ' scrolled' : ''}`}>
         <button className="nav-back" onClick={back.onClick}>
           <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden><path d="M8.5 3L4.5 7l4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
