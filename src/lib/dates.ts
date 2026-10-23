@@ -10,16 +10,8 @@ export const today = () => isoDay(new Date());
 export const isFullDate = (d: PartialDate | null | undefined): d is string => !!d && /^\d{4}-\d{2}-\d{2}$/.test(d);
 export const yearOf = (d: PartialDate | null | undefined) => (d ? Number(d.slice(0, 4)) : null);
 
-/** A year-only date counts as the last day of that year (for "how long ago"). */
-export const asFullDate = (d: PartialDate) => (d.length === 10 ? d : `${d.slice(0, 4)}-12-31`);
-
 const toUTC = (d: string) => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10));
 export const daysBetween = (a: string, b: string) => Math.round((toUTC(b) - toUTC(a)) / 86_400_000);
-
-export function addDays(d: string, n: number): string {
-  const t = new Date(toUTC(d) + n * 86_400_000);
-  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
-}
 
 /** "Oct 22" this year, "Oct 22, 2025" otherwise, "2025" for year-only. */
 export function fmtDate(d: PartialDate | null | undefined, now = today()): string {

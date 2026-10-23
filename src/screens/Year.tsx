@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '../data/store';
-import { useUI } from '../ui';
-import { years, yearStats, type HistoryItem } from '../lib/books';
+import { years, yearStats } from '../lib/books';
 import { MONTH_NAMES } from '../lib/dates';
 import { Label } from '../components/common';
 
@@ -23,13 +22,6 @@ function MonthBars({ counts }: { counts: number[] }) {
       </div>
       <div className="bars-axis" aria-hidden>{MONTH_NAMES.map((m) => <span key={m}>{m[0]}</span>)}</div>
     </figure>
-  );
-}
-
-function BookLine({ item }: { item: HistoryItem }) {
-  const { openBook } = useUI();
-  return (
-    <li><button className="row-main" onClick={() => openBook(item.book.id)}><span className="title">{item.book.title}</span><span className="author">{item.book.author}</span></button></li>
   );
 }
 
@@ -81,17 +73,6 @@ export function Year() {
           <dl className="facts">
             {s.topAuthors.map((a) => <div key={a.author}><dt>{a.author}</dt><dd>{a.count} books</dd></div>)}
           </dl>
-        </section>
-      )}
-
-      {(s.lasted.length > 0 || s.lingered.length > 0) && (
-        <section>
-          <Label>Still with you</Label>
-          <ul className="list">{s.lasted.map((i) => <BookLine key={i.read.id} item={i} />)}</ul>
-          {s.lingered.length > 0 && <>
-            <h3 className="sub-head">A little</h3>
-            <ul className="list">{s.lingered.map((i) => <BookLine key={i.read.id} item={i} />)}</ul>
-          </>}
         </section>
       )}
 

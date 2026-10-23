@@ -5,7 +5,6 @@ import { daysIn, history, matchesSearch, pile, readingNow, type HistoryItem } fr
 import { fmtRange, yearOf } from '../lib/dates';
 import { Label } from '../components/common';
 import { PileList } from '../components/PileList';
-import { AfterglowCard } from '../components/AfterglowCard';
 import { SyncMark } from '../components/SyncMark';
 
 export function Home() {
@@ -42,8 +41,6 @@ export function Home() {
           <button className="btn primary" onClick={() => setAdding(true)}>Add a book</button>
         </section>
       )}
-
-      <AfterglowCard />
 
       {reading.length > 0 && (
         <section>

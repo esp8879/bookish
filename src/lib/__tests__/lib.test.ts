@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { Book, Read } from '../../types';
 import { titleCase, nameCase } from '../titlecase';
-import { addDays, daysBetween, fmtDate, fmtRange } from '../dates';
-import { dueCheckpoint, history, nextAfterglow, pile, rankAt, readingNow, yearStats } from '../books';
+import { daysBetween, fmtDate, fmtRange } from '../dates';
+import { history, pile, rankAt, readingNow, yearStats } from '../books';
 import { sheetsToIncoming, cellDate } from '../spreadsheet';
 import { planMerge } from '../importer';
 import { parseClippings, matchBook, newHighlights, groupClippings } from '../clippings';
 import { fromJSON, toCSV, toJSON, toMarkdown } from '../export';
 
 let n = 0;
-const read = (p: Partial<Read>): Read => ({ id: `r${n++}`, status: 'finished', started: null, ended: null, note: '', afterglow: [], ...p });
+const read = (p: Partial<Read>): Read => ({ id: `r${n++}`, status: 'finished', started: null, ended: null, note: '', ...p });
 const book = (p: Partial<Book>): Book => ({ id: `b${n++}`, title: 'T', author: 'A', reads: [], pile_rank: null, highlights: [], created_at: n, updated_at: 0, deleted_at: null, ...p });
 
 describe('titleCase', () => {
@@ -39,9 +39,8 @@ describe('dates', () => {
     expect(fmtRange('2026-01-02', '2026-01-05', '2026-10-22')).toBe('Jan 2 – Jan 5');
     expect(fmtRange('2026-02-22', null, '2026-10-22')).toBe('since Feb 22');
   });
-  it('arithmetic across DST and years', () => {
+  it('arithmetic across DST', () => {
     expect(daysBetween('2026-03-01', '2026-03-31')).toBe(30);
-    expect(addDays('2025-12-31', 90)).toBe('2026-03-31');
   });
 });
 
@@ -64,26 +63,10 @@ describe('derived lists', () => {
   });
 });
 
-describe('afterglow', () => {
-  it('asks the latest passed checkpoint once', () => {
-    const r = read({ ended: '2026-01-01' });
-    expect(dueCheckpoint(r, '2026-03-31')).toBeNull();
-    expect(dueCheckpoint(r, '2026-04-01')).toBe('3m');
-    expect(dueCheckpoint({ ...r, afterglow: [{ checkpoint: '3m', at: '2026-04-02', answer: 'yes' }] }, '2026-06-01')).toBeNull();
-    expect(dueCheckpoint({ ...r, afterglow: [{ checkpoint: '3m', at: '2026-04-02', answer: 'yes' }] }, '2027-01-01')).toBe('12m');
-    expect(dueCheckpoint(read({ status: 'dnf', ended: '2025-01-01' }), '2027-01-01')).toBeNull();
-  });
-  it('year-only reads count from year end; oldest goes first', () => {
-    const lib = [book({ reads: [read({ ended: '2026-01-05' })] }), book({ title: 'Old', reads: [read({ ended: '2025' })] })];
-    expect(nextAfterglow(lib, '2026-10-22')?.book.title).toBe('Old');
-    expect(nextAfterglow(lib, '2026-10-22')?.checkpoint).toBe('3m');
-  });
-});
-
 describe('year stats', () => {
-  it('counts, median, authors, lasted', () => {
+  it('counts, median, authors', () => {
     const lib = [
-      book({ author: 'Egan', reads: [read({ started: '2026-01-08', ended: '2026-01-18', afterglow: [{ checkpoint: '3m', at: '2026-05-01', answer: 'yes' }] })] }),
+      book({ author: 'Egan', reads: [read({ started: '2026-01-08', ended: '2026-01-18' })] }),
       book({ author: 'Egan', reads: [read({ started: '2026-01-18', ended: '2026-01-20' })] }),
       book({ author: 'X', reads: [read({ started: '2026-02-22', ended: '2026-07-16' })] }),
       book({ author: 'Y', reads: [read({ status: 'dnf', started: '2026-08-20', ended: '2026-08-20' })] }),
@@ -97,7 +80,6 @@ describe('year stats', () => {
     expect(s.quickest?.days).toBe(2);
     expect(s.longest?.days).toBe(144);
     expect(s.topAuthors).toEqual([{ author: 'Egan', count: 2 }]);
-    expect(s.lasted).toHaveLength(1);
     expect(yearStats(lib, 2025).undatedFinished).toBe(1);
   });
 });

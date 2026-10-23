@@ -160,14 +160,6 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 
 .update-card { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; padding: 26px 22px 22px; width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 12px; text-align: center; box-shadow: 0 24px 60px rgba(29, 25, 21, .3); }
 .update-card h2 { font-family: var(--serif); font-size: 21px; font-weight: 600; }
 
-/* --- afterglow ----------------------------------------------------------- */
-.afterglow { display: flex; flex-direction: column; gap: 12px; padding: 18px; background: var(--green-wash); border-radius: 10px; align-items: flex-start; }
-.afterglow-kicker { font-size: 13px; font-weight: 600; font-variant: all-small-caps; letter-spacing: .12em; color: var(--muted); }
-.afterglow-q { font-family: var(--serif); font-size: 20px; line-height: 1.3; }
-.afterglow-answers { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
-.afterglow-answers .btn { flex: 1; background: var(--paper); }
-.afterglow-answers .btn.primary { background: var(--green); }
-
 /* --- year ---------------------------------------------------------------- */
 .year-pick { display: flex; gap: 2px; }
 .year-pick button { font-size: 15px; font-variant-numeric: tabular-nums; color: var(--muted); padding: 6px 8px; border-radius: 6px; }

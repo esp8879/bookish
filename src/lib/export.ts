@@ -1,6 +1,5 @@
 import type { Book } from '../types';
-import { AFTERGLOW_LABELS } from '../types';
-import { history, latestAfterglow, pile, readingNow } from './books';
+import { history, pile, readingNow } from './books';
 import { fmtRange, yearOf } from './dates';
 
 export const EXPORT_FORMAT = 'books-export';
@@ -15,7 +14,7 @@ export function fromJSON(raw: string): Book[] | null {
     const data = JSON.parse(raw);
     if (data?.format !== EXPORT_FORMAT || !Array.isArray(data.books)) return null;
     return (data.books as Book[]).filter((b) => b && typeof b.id === 'string' && typeof b.title === 'string' && Array.isArray(b.reads))
-      .map((b) => ({ ...b, highlights: b.highlights ?? [], reads: b.reads.map((r) => ({ ...r, afterglow: r.afterglow ?? [] })) }));
+      .map((b) => ({ ...b, highlights: b.highlights ?? [] }));
   } catch { return null; }
 }
 
@@ -26,13 +25,12 @@ const csvCell = (v: string | number | null | undefined) => {
 
 /** One row per read, plus one row per Up Next book. Opens in any spreadsheet. */
 export function toCSV(books: Book[]): string {
-  const rows: (string | number | null)[][] = [['title', 'author', 'status', 'started', 'ended', 'note', 'afterglow', 'highlights']];
+  const rows: (string | number | null)[][] = [['title', 'author', 'status', 'started', 'ended', 'note', 'highlights']];
   const live = books.filter((b) => !b.deleted_at);
   for (const b of live) for (const r of b.reads) {
-    const ag = latestAfterglow(r);
-    rows.push([b.title, b.author, r.status, r.started, r.ended, r.note, ag ? AFTERGLOW_LABELS[ag.answer] : '', b.highlights.length || '']);
+    rows.push([b.title, b.author, r.status, r.started, r.ended, r.note, b.highlights.length || '']);
   }
-  pile(live).forEach((b) => rows.push([b.title, b.author, 'up next', null, null, '', '', b.highlights.length || '']));
+  pile(live).forEach((b) => rows.push([b.title, b.author, 'up next', null, null, '', b.highlights.length || '']));
   return rows.map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
 }
 
@@ -62,7 +60,6 @@ export function toMarkdown(books: Book[]): string {
     if (y !== year) { year = y; out.push(`## ${y ?? 'Undated'}`, ''); }
     out.push(`### ${book.title}`, '', `${book.author}${book.author ? ' · ' : ''}${fmtRange(read.started, read.ended)}${read.status === 'dnf' ? ' · Did not finish' : ''}`, '');
     if (read.note) out.push(read.note, '');
-    for (const a of read.afterglow) out.push(`*Afterglow (${a.checkpoint}): ${AFTERGLOW_LABELS[a.answer]}${a.line ? ` — ${a.line}` : ''}*`, '');
     if (lastOf.get(book.id) === read.id) for (const h of book.highlights) out.push(`> ${h.text.replace(/\n/g, '\n> ')}`, '');
   }
   return out.join('\n');

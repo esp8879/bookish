@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { collection, doc, onSnapshot, setDoc, updateDoc, writeBatch, getDocs, query, limit, disableNetwork, enableNetwork, type DocumentData } from 'firebase/firestore';
 import { db } from '../firebase';
 import { forgetLibrary } from '../library';
-import type { Book, Read, Highlight, Afterglow } from '../types';
+import type { Book, Read, Highlight } from '../types';
 import { bottomRank, newId } from '../lib/books';
 import type { MergePlan } from '../lib/importer';
 import { today } from '../lib/dates';
@@ -20,12 +20,11 @@ export interface Store {
   /** A local write has waited more than ~2 s for the server. */
   pending: boolean;
   online: boolean;
-  addBook: (b: { title: string; author: string; reads?: Omit<Read, 'id' | 'afterglow'>[]; pile?: boolean }) => string;
+  addBook: (b: { title: string; author: string; reads?: Omit<Read, 'id'>[]; pile?: boolean }) => string;
   update: (id: string, patch: BookPatch) => void;
   startReading: (id: string, started?: string) => void;
   endRead: (id: string, readId: string, end: { status: 'finished' | 'dnf'; ended: string; note: string }) => void;
   toPile: (id: string) => void;
-  recordAfterglow: (id: string, readId: string, a: Afterglow) => void;
   addHighlights: (id: string, hs: Highlight[]) => void;
   remove: (id: string) => void;
   restore: (id: string) => void;
@@ -115,7 +114,7 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
     const now = Date.now();
     const book: Omit<Book, 'id'> = {
       title: titleCase(title), author: nameCase(author),
-      reads: reads.map((r) => ({ ...r, id: newId(), afterglow: [] })),
+      reads: reads.map((r) => ({ ...r, id: newId() })),
       pile_rank: pile ? bottomRank(booksRef.current) : null,
       highlights: [], created_at: now, updated_at: now, deleted_at: null,
     };
@@ -126,7 +125,7 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   const startReading = useCallback((id: string, started = today()) => {
     const b = ref.current.get(id);
     if (!b) return;
-    update(id, { reads: [...b.reads, { id: newId(), status: 'reading', started, ended: null, note: '', afterglow: [] }], pile_rank: null });
+    update(id, { reads: [...b.reads, { id: newId(), status: 'reading', started, ended: null, note: '' }], pile_rank: null });
   }, [update]);
 
   const endRead = useCallback<Store['endRead']>((id, readId, end) => {
@@ -136,12 +135,6 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   }, [update]);
 
   const toPile = useCallback((id: string) => update(id, { pile_rank: bottomRank(booksRef.current) }), [update]);
-
-  const recordAfterglow = useCallback<Store['recordAfterglow']>((id, readId, a) => {
-    const b = ref.current.get(id);
-    if (!b) return;
-    update(id, { reads: b.reads.map((r) => (r.id === readId ? { ...r, afterglow: [...r.afterglow, a] } : r)) });
-  }, [update]);
 
   const addHighlights = useCallback((id: string, hs: Highlight[]) => {
     const b = ref.current.get(id);
@@ -175,8 +168,8 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   }, [booksCol]);
 
   const value = useMemo<Store>(() => ({
-    lid, books, byId, loaded, pending, online, addBook, update, startReading, endRead, toPile, recordAfterglow, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary,
-  }), [lid, books, byId, loaded, pending, online, addBook, update, startReading, endRead, toPile, recordAfterglow, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary]);
+    lid, books, byId, loaded, pending, online, addBook, update, startReading, endRead, toPile, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary,
+  }), [lid, books, byId, loaded, pending, online, addBook, update, startReading, endRead, toPile, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

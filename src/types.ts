@@ -2,16 +2,6 @@
 export type PartialDate = string;
 
 export type ReadStatus = 'reading' | 'finished' | 'dnf';
-export type Checkpoint = '3m' | '12m';
-export type AfterglowAnswer = 'yes' | 'a_little' | 'not_really';
-
-export interface Afterglow {
-  checkpoint: Checkpoint;
-  /** Day it was answered. */
-  at: string;
-  answer: AfterglowAnswer;
-  line?: string;
-}
 
 export interface Read {
   id: string;
@@ -20,7 +10,6 @@ export interface Read {
   /** Finished or gave-up day; null while reading. */
   ended: PartialDate | null;
   note: string;
-  afterglow: Afterglow[];
 }
 
 export interface Highlight {
@@ -44,5 +33,3 @@ export interface Book {
   updated_at: number;
   deleted_at: number | null;
 }
-
-export const AFTERGLOW_LABELS: Record<AfterglowAnswer, string> = { yes: 'Yes', a_little: 'A little', not_really: 'Not really' };

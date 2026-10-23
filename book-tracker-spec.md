@@ -2,7 +2,7 @@
 
 A personal reading log as a mobile-first PWA, replacing `book tracker.xlsx`. Purely for tracking: it is for one reader, and the data belongs to that reader.
 
-**Never:** recommendations, discovery, covers, external book lookups (Google Books, Open Library, etc.), ratings, tags, notifications, social features.
+**Never:** recommendations, discovery, covers, external book lookups (Google Books, Open Library, etc.), ratings, tags, afterglow or other reflection prompts, notifications, social features.
 
 ## Architecture (same principles as bébé tracker)
 
@@ -19,7 +19,7 @@ Used almost entirely on a phone, often on the subway.
 
 - The full app shell is precached, so it opens with no signal.
 - The Firestore persistent cache (IndexedDB) holds the whole library. The library is small, so there are no windowed queries and the app listens to everything.
-- Every action works offline and is queued: add, start, finish, DNF, reorder, notes, afterglow.
+- Every action works offline and is queued: add, start, finish, DNF, reorder, notes.
 - A quiet "not synced yet" marker comes from `hasPendingWrites`.
 - Installing to the Home Screen is the intended use, because iOS keeps storage for installed web apps much more reliably than for a Safari tab.
 - Acceptance test: in airplane mode, add a book, finish one, reorder the pile, and write a note. Reconnect and everything syncs.
@@ -30,8 +30,7 @@ Dates are calendar strings (`YYYY-MM-DD`, with `YYYY` allowed for imported 2025 
 
 - `libraries/{lid}/books/{id}`
   - `title` (stored in Title Case), `author`
-  - `reads[]`: `{ status: 'reading' | 'finished' | 'dnf', started, ended, note, afterglow[] }`
-    - `afterglow[]`: `{ checkpoint: '3m' | '12m', at: 'YYYY-MM-DD', answer: 'yes' | 'a_little' | 'not_really', line? }`
+  - `reads[]`: `{ id, status: 'reading' | 'finished' | 'dnf', started, ended, note }`
   - `pile_rank`: number when the book is in Up Next, otherwise null. A book is "in the pile" if it has a rank and no read in progress.
   - `highlights[]`: `{ id, text, location?, added, source: 'clippings' | 'manual' }`. `id` is a hash of the normalized text, so re-imports are no-ops.
 
@@ -47,9 +46,7 @@ done or DNF → write the note → "What's next?" showing the top 5 of the pile 
 
 **Book page:** every read with its dates and note, plus that book's highlights (highlights are shown here only and are not searched). Buttons: **Read again** for finished books, **Try again** for DNF books. Both start a new read and keep the old ones.
 
-**Afterglow:** about 3 months (90 days) and about 12 months (365 days) after a book is finished (year-only dates count from Dec 31), the app may show one card when opened (at most one per visit, dismissible): *"Still thinking about {title}?"* → Yes / A little / Not really, plus an optional line. It is not shown anywhere prominent, only in the Year view.
-
-**Year:** year-end stats. Books finished, DNFs, books per month, average days per book, most-read authors, and afterglow results (what lasted).
+**Year:** year-end stats. Books finished, DNFs, books per month, average days per book, most-read authors.
 
 **Settings:** library link (copy), export (JSON complete, CSV, Markdown by year), import, delete library.
 

@@ -5,7 +5,7 @@ import { bookKey, newId } from './books';
 export interface Incoming {
   title: string;
   author: string;
-  reads: Omit<Read, 'id' | 'afterglow'>[];
+  reads: Omit<Read, 'id'>[];
   /** Goes to the bottom of Up Next, in the order given. */
   pile?: boolean;
 }
@@ -16,7 +16,7 @@ export interface MergePlan {
   skipped: number;
 }
 
-const sameRead = (a: Omit<Read, 'id' | 'afterglow'>, b: Omit<Read, 'id' | 'afterglow'>) => a.status === b.status && a.started === b.started && a.ended === b.ended;
+const sameRead = (a: Omit<Read, 'id'>, b: Omit<Read, 'id'>) => a.status === b.status && a.started === b.started && a.ended === b.ended;
 
 /**
  * Merge incoming books into the library by title + author. Reads already present (same status and dates)
@@ -41,7 +41,7 @@ export function planMerge(existing: Book[], incoming: Incoming[], now = Date.now
     let changed = false;
     for (const r of inc.reads) {
       if (book.reads.some((x) => sameRead(x, r))) { skipped++; continue; }
-      book.reads.push({ ...r, id: newId(), afterglow: [] });
+      book.reads.push({ ...r, id: newId() });
       changed = true;
     }
     if (inc.pile && book.pile_rank == null && !book.reads.some((r) => r.status === 'reading')) { book.pile_rank = rank++; changed = true; }
