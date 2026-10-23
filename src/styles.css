@@ -73,7 +73,7 @@ em { font-style: italic; }
 .drawers button { min-height: var(--drawers-h); padding: 0 18px; font-size: 15px; font-weight: 600; font-variant: all-small-caps; letter-spacing: .12em; color: var(--muted); }
 .drawers button:active { color: var(--ink); }
 
-.sync { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); font-variant: all-small-caps; letter-spacing: .08em; white-space: nowrap; }
+.sync { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; font-size: 13px; color: var(--muted); font-variant: all-small-caps; letter-spacing: .08em; white-space: nowrap; }
 .sync i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 .sync.busy i { background: transparent; border: 1.5px solid var(--green); }
 .sync.wait { color: var(--ink); }
@@ -81,7 +81,8 @@ em { font-style: italic; }
 
 /* The ledger line: the day and the year's count, like the head of a diary page. */
 .ledger { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 0; font-size: 13px; font-weight: 600; font-variant: all-small-caps; letter-spacing: .09em; color: var(--muted); white-space: nowrap; }
-.ledger > span:first-child { min-width: 0; }
+/* The date side gives way first: it trims with an ellipsis rather than ever running into the sync state. */
+.ledger > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 /* Card-catalog drawer label: small caps, a hairline to the edge. */
 .label { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; min-height: 32px; }
@@ -263,6 +264,11 @@ section > p.small { margin-top: 8px; }
 .dnf-list .btn { flex-shrink: 0; }
 .dnf-list .title { font-size: 17px; }
 
+/* Bottom band on the drawer screens: the main screen's rule and paper margin, without the buttons. */
+.bottom-band { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; max-width: 600px; margin: 0 auto; padding: 0 var(--gutter) calc(env(safe-area-inset-bottom) + 18px); background: var(--paper); pointer-events: none; }
+.bottom-band > div { height: var(--drawers-h); border-top: 1px solid var(--rule); }
+.screen.drawer { padding-bottom: calc(var(--drawers-h) + 18px + 32px + env(safe-area-inset-bottom)); }
+
 /* --- pointer and keyboard ------------------------------------------------- */
 :focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 4px; }
 input:focus-visible, textarea:focus-visible, select:focus-visible { outline: none; }
@@ -284,6 +290,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
   /* The main screen flows like any page, so the drawers row sits right after the content. */
   .screen.home { position: static; overflow: visible; padding-top: 48px; padding-bottom: 64px; }
   .drawers { margin-top: 8px; }
+  /* The main screen's row follows the content here, so the drawer screens don't need the band either. */
+  .bottom-band { display: none; }
+  .screen.drawer { padding-bottom: 64px; }
   /* Sheets become centred dialogs rather than bottom sheets. */
   .sheet { top: 12vh; bottom: auto; max-height: 76vh; border: 1px solid var(--rule); border-radius: 14px; padding-bottom: 24px; box-shadow: 0 24px 60px rgba(29, 25, 21, .22); }
 }

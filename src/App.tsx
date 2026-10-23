@@ -35,6 +35,8 @@ function Shell() {
       {tab === 'queue' && <Queue />}
       {tab === 'stats' && <Stats />}
       {tab === 'settings' && <Settings />}
+      {/* Drawer screens end in the same rule and paper band as the main screen's bottom row, with the content scrolling behind it. */}
+      {tab !== 'now' && <div className="bottom-band" aria-hidden><div /></div>}
       {bookId && <BookPage key={bookId} id={bookId} />}
       {adding && <AddBook />}
       {finishing && <FinishFlow {...finishing} />}
