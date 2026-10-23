@@ -1,14 +1,18 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '../data/store';
 import { useUI } from '../ui';
-import { queue, searchText, UP_NEXT } from '../lib/books';
-import { QueueList } from '../components/QueueList';
+import { currentRead, lastRead, queue, searchText, UP_NEXT } from '../lib/books';
+import { QueueList, SetAside } from '../components/QueueList';
 import { BackToNow } from '../components/common';
 
 /** Every book you want to read, in order. The top five are Up Next on the Books tab. */
 export function Queue() {
-  const { books } = useStore();
-  const { setAdding, setTab } = useUI();
+  const { books, enqueue } = useStore();
+  const { setAdding, setTab, openBook, toast } = useUI();
+  const [showDnf, setShowDnf] = useState(false);
+  // Set-aside books that aren't queued: candidates to try again.
+  const dnf = useMemo(() => books.filter((b) => b.rank == null && !currentRead(b) && lastRead(b)?.status === 'dnf')
+    .sort((a, b) => (lastRead(b)!.ended ?? '').localeCompare(lastRead(a)!.ended ?? '')), [books]);
   const [q, setQ] = useState('');
   const list = useMemo(() => queue(books), [books]);
   const shown = useMemo(() => {
@@ -27,7 +31,6 @@ export function Queue() {
       {list.length > 8 && <input type="search" className="search" placeholder="Search the queue" value={q} onChange={(e) => setQ(e.target.value)} />}
       {list.length ? (
         <section>
-          {!searching && <p className="muted small queue-note">Drag to reorder. The top {UP_NEXT} are Up Next.</p>}
           {/* Reordering or numbering a filtered list would mislead, so both are off while searching. */}
           <QueueList books={shown} queue={list} sortable={!searching} numbered={!searching} />
           {searching && !shown.length && <p className="muted small pad">Nothing matches “{q}”.</p>}
@@ -35,8 +38,31 @@ export function Queue() {
       ) : (
         <section className="empty">
           <p>The queue is empty.</p>
-          <p className="muted">Everything you want to read goes here. The top {UP_NEXT} show up on the Books tab as Up Next.</p>
+          <p className="muted">Everything you want to read goes here. The top {UP_NEXT} show up on the main screen as Up Next.</p>
           <button className="btn primary" onClick={() => setAdding(true)}>Add a book</button>
+        </section>
+      )}
+
+      {dnf.length > 0 && !searching && (
+        <section>
+          <button className={`dnf-toggle${showDnf ? ' open' : ''}`} aria-expanded={showDnf} onClick={() => setShowDnf(!showDnf)}>
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><path d="M4 2.5L7.5 6 4 9.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <span>Didn't finish · {dnf.length}</span><i />
+          </button>
+          {showDnf && (
+            <ul className="list dnf-list">
+              {dnf.map((b) => (
+                <li key={b.id}>
+                  <button className="row-main" onClick={() => openBook(b.id)}>
+                    <span className="title">{b.title}</span>
+                    {b.author && <span className="author">{b.author}</span>}
+                    <SetAside book={b} />
+                  </button>
+                  <button className="btn small" onClick={() => { enqueue(b.id); toast(`${b.title} is back in the queue, at the bottom`); }}>Queue</button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
     </main>

@@ -74,6 +74,7 @@ export function Stats() {
   const ys = useMemo(() => years(books), [books]);
   const [year, setYear] = useState(ys[0]);
   const [q, setQ] = useState('');
+  const [searching, setSearching] = useState(false);
   const all = useMemo(() => history(books), [books]);
   const found = useMemo(() => (q.trim() ? all.filter((i) => matchesSearch(i, q)) : []), [all, q]);
   const s = useMemo(() => yearStats(books, year), [books, year]);
@@ -84,15 +85,23 @@ export function Stats() {
     <main className="screen drawer">
       <BackToNow onBack={() => setTab('now')} />
       <header className="masthead">
-        <h1 className="wordmark">{q.trim() ? 'Search' : year}</h1>
-        {ys.length > 1 && !q.trim() && (
-          <div className="year-pick">
-            {ys.map((y) => <button key={y} className={y === year ? 'on' : ''} onClick={() => setYear(y)}>{y}</button>)}
+        {searching ? (
+          <div className="search-row">
+            <input type="search" className="search" placeholder="Titles, authors, notes" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+            <button className="btn link" onClick={() => { setSearching(false); setQ(''); }}>Cancel</button>
           </div>
-        )}
+        ) : <>
+          {/* The year is the heading; a native select so a long list of years stays one tap. */}
+          <label className="year-select">
+            <span className="wordmark">{year}</span>
+            {ys.length > 1 && <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            {ys.length > 1 && <select aria-label="Year" value={year} onChange={(e) => setYear(+e.target.value)}>{ys.map((y) => <option key={y} value={y}>{y}</option>)}</select>}
+          </label>
+          {all.length > 0 && <button className="icon-btn" aria-label="Search every year" onClick={() => setSearching(true)}>
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M12.6 12.6L17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+          </button>}
+        </>}
       </header>
-
-      {all.length > 0 && <input type="search" className="search" placeholder="Search every year: titles, authors, notes" value={q} onChange={(e) => setQ(e.target.value)} />}
 
       {q.trim() ? <SearchResults items={found} q={q} /> : <>
 
@@ -112,10 +121,11 @@ export function Stats() {
       {s.medianDays != null && (
         <section>
           <Label>Pace</Label>
-          <dl className="facts">
-            <div><dt>Typical book</dt><dd>{s.medianDays} {s.medianDays === 1 ? 'day' : 'days'}</dd></div>
-            {s.quickest && <div><dt>Quickest</dt><dd><em>{s.quickest.item.book.title}</em>, {s.quickest.days} {s.quickest.days === 1 ? 'day' : 'days'}</dd></div>}
-            {s.longest && <div><dt>Longest</dt><dd><em>{s.longest.item.book.title}</em>, {s.longest.days} days</dd></div>}
+          {/* Days first and large, the book beneath, so each figure fits its column. */}
+          <dl className="pace">
+            <div><dt>Typical</dt><dd><span className="pace-n">{s.medianDays} {s.medianDays === 1 ? 'day' : 'days'}</span><span className="pace-t">per book</span></dd></div>
+            {s.quickest && <div><dt>Quickest</dt><dd><span className="pace-n">{s.quickest.days} {s.quickest.days === 1 ? 'day' : 'days'}</span><em className="pace-t">{s.quickest.item.book.title}</em></dd></div>}
+            {s.longest && <div><dt>Longest</dt><dd><span className="pace-n">{s.longest.days} days</span><em className="pace-t">{s.longest.item.book.title}</em></dd></div>}
           </dl>
         </section>
       )}

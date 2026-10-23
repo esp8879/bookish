@@ -7,7 +7,6 @@ import { Label } from '../components/common';
 import { QueueList } from '../components/QueueList';
 import { ReadingRow } from '../components/ReadingRow';
 import { SyncMark } from '../components/SyncMark';
-import { YearGrid } from '../components/YearGrid';
 
 export function Home() {
   const { books, loaded } = useStore();
@@ -53,9 +52,6 @@ export function Home() {
         </section>
       )}
 
-      {loaded && !empty && (
-        <YearGrid books={books} />
-      )}
     </main>
   );
 }

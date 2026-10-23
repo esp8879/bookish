@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Book, Read } from '../../types';
 import { titleCase, nameCase } from '../titlecase';
-import { daysBetween, fmtDate, fmtLongDay, fmtRange } from '../dates';
-import { monthWeeks, yearActivity } from '../activity';
+import { daysBetween, fmtDate, fmtRange, fmtShortDay } from '../dates';
 import { history, normalizeBook, queue, rankAt, readingNow, upNext, yearStats } from '../books';
 import { sheetsToIncoming, cellDate } from '../spreadsheet';
 import { planMerge } from '../importer';
@@ -40,6 +39,7 @@ describe('dates', () => {
     expect(fmtRange('2026-01-02', '2026-01-05', '2026-10-22')).toBe('Jan 2 – Jan 5');
     expect(fmtRange('2026-02-22', null, '2026-10-22')).toBe('since Feb 22');
   });
+  it('short day for the ledger line', () => expect(fmtShortDay('2026-10-22')).toBe('Thu, Oct 22'));
   it('arithmetic across DST', () => {
     expect(daysBetween('2026-03-01', '2026-03-31')).toBe(30);
   });
@@ -186,33 +186,3 @@ describe('export', () => {
   });
 });
 
-describe('year activity', () => {
-  const lib = [
-    book({ title: 'Ruin', reads: [read({ started: '2025-12-30', ended: '2026-01-03' })] }),
-    book({ title: 'Phlebas', reads: [read({ status: 'dnf', started: '2026-01-05', ended: '2026-01-05' })] }),
-    book({ title: 'Memory', reads: [read({ status: 'reading', started: '2026-01-09' })] }),
-    book({ title: 'Old', reads: [read({ ended: '2025' })] }),
-  ];
-  const days = yearActivity(lib, 2026, '2026-01-10');
-  it('covers Jan 1 to today', () => expect([...days.keys()]).toHaveLength(10));
-  it('reading spans clip to the year; finish marks the end day', () => {
-    expect(days.get('2026-01-01')?.reading).toEqual(['Ruin']);
-    expect(days.get('2026-01-03')?.finished).toEqual(['Ruin']);
-    expect(days.get('2026-01-04')?.reading).toEqual([]);
-  });
-  it('DNF days are reading days, not finishes; current reads run to today', () => {
-    expect(days.get('2026-01-05')).toMatchObject({ reading: ['Phlebas'], finished: [] });
-    expect(days.get('2026-01-10')?.reading).toEqual(['Memory']);
-  });
-  it('month weeks: five buckets per month, future ones flagged', () => {
-    const m = monthWeeks(lib, 2026, '2026-01-10');
-    expect(m).toHaveLength(12);
-    expect(m[0]).toHaveLength(5);
-    expect(m[1]).toHaveLength(4); // Feb 2026 has 28 days
-    expect(m[0][0]).toMatchObject({ from: '2026-01-01', to: '2026-01-07', level: 2, finished: ['Ruin'], future: false });
-    expect(m[0][1]).toMatchObject({ to: '2026-01-10', level: 1, reading: ['Memory'] });
-    expect(m[0][2].future).toBe(true);
-    expect(m[5][0].future).toBe(true);
-  });
-  it('long day format', () => expect(fmtLongDay('2026-10-22')).toBe('Thursday, October 22'));
-});

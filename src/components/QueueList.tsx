@@ -5,10 +5,13 @@ import { daysBetween, fmtDate, isFullDate } from '../lib/dates';
 import { useStore } from '../data/store';
 import { useUI } from '../ui';
 
+/** How far the list's scroll container has scrolled: the main screen scrolls itself (if it ever overflows), other screens scroll the page. */
+const scrollTop = (el: HTMLElement) => (el.closest('.screen.home') as HTMLElement | null)?.scrollTop ?? window.scrollY;
+
 interface Drag { id: string; from: number; to: number; startY: number; scrollY: number; dy: number; tops: number[]; heights: number[] }
 
 /** "Didn't finish · Aug 20 · 3 days in" for a queued book that was set aside before. */
-function SetAside({ book }: { book: Book }) {
+export function SetAside({ book }: { book: Book }) {
   const r = lastRead(book);
   if (r?.status !== 'dnf') return null;
   const days = isFullDate(r.started) && isFullDate(r.ended) ? daysBetween(r.started, r.ended) : null;
@@ -35,12 +38,12 @@ export function QueueList({ books, queue, sortable = true, numbered = false }: {
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const rects = rows.current.slice(0, books.length).map((r) => r!.getBoundingClientRect());
-    setDrag({ id: books[i].id, from: i, to: i, startY: e.clientY, scrollY: window.scrollY, dy: 0, tops: rects.map((r) => r.top), heights: rects.map((r) => r.height) });
+    setDrag({ id: books[i].id, from: i, to: i, startY: e.clientY, scrollY: scrollTop(e.currentTarget as HTMLElement), dy: 0, tops: rects.map((r) => r.top), heights: rects.map((r) => r.height) });
   };
   const move = (e: PointerEvent) => {
     if (!drag) return;
     // Row positions were measured in page terms at the start; if the page scrolls mid-drag, follow it.
-    const dy = e.clientY - drag.startY + (window.scrollY - drag.scrollY);
+    const dy = e.clientY - drag.startY + (scrollTop(e.currentTarget as HTMLElement) - drag.scrollY);
     const center = drag.tops[drag.from] + dy + drag.heights[drag.from] / 2;
     let to = 0;
     for (let i = 0; i < drag.tops.length; i++) if (center > drag.tops[i] + drag.heights[i] / 2) to = i;
