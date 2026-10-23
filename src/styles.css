@@ -1,6 +1,8 @@
 /* Paper and ink. Library-esque in type and structure, never in texture. */
 :root {
   --paper: #F5F0E6; --paper-2: #EDE6D8; --paper-3: #E4DBCA;
+  /* Paper as channels, so fades go from paper-at-zero to paper with no colour shift. */
+  --paper-rgb: 245 240 230;
   --ink: #2B2520; --muted: #7A6F63; --rule: #D9D0C1;
   --green: #3F5B4A; --green-ink: #F5F0E6; --green-wash: rgba(63, 91, 74, .08);
   --red: #9A3B2E;
@@ -14,6 +16,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --paper: #1D1915; --paper-2: #27221C; --paper-3: #322B24;
+    --paper-rgb: 29 25 21;
     --ink: #EDE5D6; --muted: #A09481; --rule: #3A332B;
     --green: #8FB39C; --green-ink: #1D1915; --green-wash: rgba(143, 179, 156, .1);
     --red: #E08A78;
@@ -69,7 +72,12 @@ em { font-style: italic; }
 .shelf .handle { padding: 10px 4px 10px 14px; }
 
 /* The quiet row on the main screen that opens the drawers: pinned to the bottom on a phone, after the content on a wide screen. */
-.drawers { margin-top: auto; flex-shrink: 0; display: flex; justify-content: center; gap: 8px; border-top: 1px solid var(--rule); }
+.drawers { margin-top: auto; flex-shrink: 0; display: flex; justify-content: center; gap: 8px; }
+/* The drawer screens' band ends the page with a soft fade instead of a rule: content dissolves into the paper as it
+   goes under. It only shows while something is actually under it (a fade over blank paper can dither into a faint box). */
+.bottom-band::before { content: ''; position: absolute; left: 0; right: 0; top: -28px; height: 28px; pointer-events: none; opacity: 0; transition: opacity .15s;
+  background: linear-gradient(to bottom, rgb(var(--paper-rgb) / 0), rgb(var(--paper-rgb))); }
+.bottom-band.covering::before { opacity: 1; }
 .drawers button { min-height: var(--drawers-h); padding: 0 18px; font-size: 15px; font-weight: 600; font-variant: all-small-caps; letter-spacing: .12em; color: var(--muted); }
 .drawers button:active { color: var(--ink); }
 
@@ -264,9 +272,9 @@ section > p.small { margin-top: 8px; }
 .dnf-list .btn { flex-shrink: 0; }
 .dnf-list .title { font-size: 17px; }
 
-/* Bottom band on the drawer screens: the main screen's rule and paper margin, without the buttons. */
+/* Bottom band on the drawer screens: a paper margin the content scrolls behind (it's fixed, so it already positions its fade). */
 .bottom-band { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; max-width: 600px; margin: 0 auto; padding: 0 var(--gutter) calc(env(safe-area-inset-bottom) + 18px); background: var(--paper); pointer-events: none; }
-.bottom-band > div { height: var(--drawers-h); border-top: 1px solid var(--rule); }
+.bottom-band > div { height: var(--drawers-h); }
 .screen.drawer { padding-bottom: calc(var(--drawers-h) + 18px + 32px + env(safe-area-inset-bottom)); }
 
 /* --- pointer and keyboard ------------------------------------------------- */

@@ -11,6 +11,21 @@ import { BookPage } from './components/BookPage';
 import { AddBook } from './components/AddBook';
 import { FinishFlow } from './components/FinishFlow';
 
+/** Paper band at the bottom of the drawer screens; its fade turns on only while content is scrolled under it. */
+function BottomBand({ tab }: { tab: string }) {
+  const [covering, setCovering] = useState(false);
+  useEffect(() => {
+    const check = () => setCovering(window.scrollY + window.innerHeight < document.documentElement.scrollHeight - 2);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(document.body);
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    return () => { ro.disconnect(); window.removeEventListener('scroll', check); window.removeEventListener('resize', check); };
+  }, [tab]);
+  return <div className={`bottom-band${covering ? ' covering' : ''}`} aria-hidden><div /></div>;
+}
+
 function UpdatePrompt() {
   const [ready, setReady] = useState(updateReady);
   const [updating, setUpdating] = useState(false);
@@ -35,8 +50,8 @@ function Shell() {
       {tab === 'queue' && <Queue />}
       {tab === 'stats' && <Stats />}
       {tab === 'settings' && <Settings />}
-      {/* Drawer screens end in the same rule and paper band as the main screen's bottom row, with the content scrolling behind it. */}
-      {tab !== 'now' && <div className="bottom-band" aria-hidden><div /></div>}
+      {/* Drawer screens end in a paper band, the height of the main screen's bottom row, that content scrolls behind. */}
+      {tab !== 'now' && <BottomBand tab={tab} />}
       {bookId && <BookPage key={bookId} id={bookId} />}
       {adding && <AddBook />}
       {finishing && <FinishFlow {...finishing} />}
