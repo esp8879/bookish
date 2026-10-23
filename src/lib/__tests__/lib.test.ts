@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Book, Read } from '../../types';
 import { titleCase, nameCase } from '../titlecase';
-import { daysBetween, fmtDate, fmtRange } from '../dates';
+import { daysBetween, fmtDate, fmtLongDay, fmtRange } from '../dates';
+import { weekColumns, yearActivity } from '../activity';
 import { history, normalizeBook, queue, rankAt, readingNow, upNext, yearStats } from '../books';
 import { sheetsToIncoming, cellDate } from '../spreadsheet';
 import { planMerge } from '../importer';
@@ -182,5 +183,32 @@ describe('export', () => {
     const md = toMarkdown(lib);
     expect(md).toContain('## 2026');
     expect(md).toContain('> Sun');
+  });
+});
+
+describe('year activity', () => {
+  const lib = [
+    book({ title: 'Ruin', reads: [read({ started: '2025-12-30', ended: '2026-01-03' })] }),
+    book({ title: 'Phlebas', reads: [read({ status: 'dnf', started: '2026-01-05', ended: '2026-01-05' })] }),
+    book({ title: 'Memory', reads: [read({ status: 'reading', started: '2026-01-09' })] }),
+    book({ title: 'Old', reads: [read({ ended: '2025' })] }),
+  ];
+  const days = yearActivity(lib, 2026, '2026-01-10');
+  it('covers Jan 1 to today', () => expect([...days.keys()]).toHaveLength(10));
+  it('reading spans clip to the year; finish marks the end day', () => {
+    expect(days.get('2026-01-01')?.reading).toEqual(['Ruin']);
+    expect(days.get('2026-01-03')?.finished).toEqual(['Ruin']);
+    expect(days.get('2026-01-04')?.reading).toEqual([]);
+  });
+  it('DNF days are reading days, not finishes; current reads run to today', () => {
+    expect(days.get('2026-01-05')).toMatchObject({ reading: ['Phlebas'], finished: [] });
+    expect(days.get('2026-01-10')?.reading).toEqual(['Memory']);
+  });
+  it('weeks start on Sunday', () => {
+    const cols = weekColumns(days);
+    // Jan 1 2026 is a Thursday: four blanks first.
+    expect(cols[0].slice(0, 5).map((d) => d?.day ?? null)).toEqual([null, null, null, null, '2026-01-01']);
+    expect(cols.every((c) => c.length === 7)).toBe(true);
+    expect(fmtLongDay('2026-10-22')).toBe('Thursday, October 22');
   });
 });

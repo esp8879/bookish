@@ -11,18 +11,42 @@ export function useBodyLock() {
   }, []);
 }
 
-export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+/**
+ * Bottom sheet. On iOS the keyboard covers the bottom of the layout viewport, so the sheet follows
+ * the visual viewport: it sits on top of the keyboard and never grows taller than what's visible.
+ * With `action` (e.g. Save), the header becomes a Cancel / action bar that stays pinned while the body scrolls.
+ */
+export function Sheet({ title, onClose, children, action }: { title: string; onClose: () => void; children: ReactNode; action?: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const el = ref.current;
+    if (!vv || !el) return;
+    const fit = () => {
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      el.style.setProperty('--kb', `${kb}px`);
+      el.style.setProperty('--vvh', `${vv.height}px`);
+      el.classList.toggle('kb', kb > 40);
+    };
+    fit();
+    vv.addEventListener('resize', fit);
+    vv.addEventListener('scroll', fit);
+    return () => { vv.removeEventListener('resize', fit); vv.removeEventListener('scroll', fit); };
+  }, []);
   useBodyLock();
   return (
     <>
       <div className="sheet-backdrop" onClick={onClose} />
-      <div className="sheet" role="dialog" aria-label={title}>
-        <div className="sheet-head"><h2>{title}</h2><button className="btn link" onClick={onClose}>Close</button></div>
+      <div className="sheet" role="dialog" aria-label={title} ref={ref}>
+        {action ? (
+          <div className="sheet-bar"><button className="btn link" onClick={onClose}>Cancel</button>{action}</div>
+        ) : null}
+        <div className="sheet-head"><h2>{title}</h2>{!action && <button className="btn link" onClick={onClose}>Close</button>}</div>
         {children}
       </div>
     </>

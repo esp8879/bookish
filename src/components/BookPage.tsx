@@ -41,10 +41,10 @@ function ReadEditor({ book, read, onDone }: { book: Book; read: Read; onDone: ()
 
 export function BookPage({ id }: { id: string }) {
   const store = useStore();
-  const { openBook, setFinishing, toast } = useUI();
+  const { openBook, setFinishing, toast, editOnOpen } = useUI();
   const book = store.byId.get(id);
   const [editingRead, setEditingRead] = useState<string | null>(null);
-  const [editingBook, setEditingBook] = useState(false);
+  const [editingBook, setEditingBook] = useState(editOnOpen);
   const [title, setTitle] = useState(book?.title ?? '');
   const [author, setAuthor] = useState(book?.author ?? '');
   const [quote, setQuote] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export function BookPage({ id }: { id: string }) {
   return (
     <div className="page" role="dialog" aria-label={book.title}>
       <div className="page-bar">
-        <button className="btn link" onClick={() => openBook(null)}>‹ Books</button>
+        <button className="btn link" onClick={() => openBook(null)}>‹ Back</button>
         {!editingBook && <button className="btn link" onClick={() => { setTitle(book.title); setAuthor(book.author); setEditingBook(true); }}>Edit</button>}
       </div>
 

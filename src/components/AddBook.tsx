@@ -36,7 +36,7 @@ export function AddBook() {
   };
 
   return (
-    <Sheet title="Add a book" onClose={close}>
+    <Sheet title="Add a book" onClose={close} action={<button className="btn primary small" disabled={!title.trim()} onClick={save}>Add</button>}>
       <Field label="Title"><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus autoCapitalize="words" enterKeyHint="next" /></Field>
       <Field label="Author">
         <input type="text" list="authors" value={author} onChange={(e) => setAuthor(e.target.value)} autoCapitalize="words" enterKeyHint="done" />
@@ -54,7 +54,6 @@ export function AddBook() {
           <Field label="Note"><Grow value={note} onChange={setNote} placeholder="What did you think?" /></Field>
         </>
       )}
-      <button className="btn primary block" disabled={!title.trim()} onClick={save}>Add</button>
     </Sheet>
   );
 }

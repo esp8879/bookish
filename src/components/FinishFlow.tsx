@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useStore } from '../data/store';
-import { useUI } from '../ui';
+import { useUI, type Finishing } from '../ui';
 import { queue, UP_NEXT } from '../lib/books';
 import { today } from '../lib/dates';
 import { DateField, Field, Grow, Seg, Sheet } from './common';
 
 /** Finish → done or DNF (optionally back to the queue) → note → "What's next?" from Up Next, with the queue a tap away. */
-export function FinishFlow({ bookId, readId }: { bookId: string; readId: string }) {
+export function FinishFlow({ bookId, readId, status: initial = 'finished' }: Finishing) {
   const { byId, books, endRead, startReading, enqueue } = useStore();
   const { setFinishing, toast } = useUI();
   const book = byId.get(bookId);
   const read = book?.reads.find((r) => r.id === readId);
-  const [status, setStatus] = useState<'finished' | 'dnf'>('finished');
+  const [status, setStatus] = useState<'finished' | 'dnf'>(initial);
   const [ended, setEnded] = useState<string>(today());
   const [note, setNote] = useState(read?.note ?? '');
   const [step, setStep] = useState<'end' | 'next'>('end');
@@ -52,7 +52,7 @@ export function FinishFlow({ bookId, readId }: { bookId: string; readId: string 
   }
 
   return (
-    <Sheet title={book.title} onClose={close}>
+    <Sheet title={book.title} onClose={close} action={<button className="btn primary small" onClick={save}>Save</button>}>
       <Seg options={[{ value: 'finished', label: 'Finished' }, { value: 'dnf', label: "Didn't finish" }]} value={status} onChange={setStatus} />
       <DateField label={status === 'finished' ? 'Finished on' : 'Stopped on'} value={ended} onChange={(v) => setEnded(v ?? today())} />
       {status === 'dnf' && (
@@ -62,9 +62,8 @@ export function FinishFlow({ bookId, readId }: { bookId: string; readId: string 
         </label>
       )}
       <Field label="Note">
-        <Grow value={note} onChange={setNote} autoFocus placeholder={status === 'finished' ? 'What did you think?' : 'Why did you stop?'} />
+        <Grow value={note} onChange={setNote} placeholder={status === 'finished' ? 'What did you think?' : 'Why did you stop?'} />
       </Field>
-      <button className="btn primary block" onClick={save}>Save</button>
     </Sheet>
   );
 }

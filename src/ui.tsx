@@ -1,19 +1,22 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
-export type Tab = 'books' | 'queue' | 'stats' | 'settings';
+export type Tab = 'now' | 'queue' | 'stats' | 'settings';
+export interface Finishing { bookId: string; readId: string; status?: 'finished' | 'dnf' }
 
 interface UI {
   tab: Tab;
   setTab: (t: Tab) => void;
   /** Book page overlay. */
   bookId: string | null;
-  openBook: (id: string | null) => void;
+  /** Opens the book page; `edit` starts it with the title and author editor open. */
+  openBook: (id: string | null, opts?: { edit?: boolean }) => void;
+  editOnOpen: boolean;
   /** Add sheet (only reachable from the Queue tab). */
   adding: boolean;
   setAdding: (v: boolean) => void;
   /** Finish flow for one read. */
-  finishing: { bookId: string; readId: string } | null;
-  setFinishing: (f: { bookId: string; readId: string } | null) => void;
+  finishing: Finishing | null;
+  setFinishing: (f: Finishing | null) => void;
   toast: (msg: string, undo?: () => void) => void;
 }
 
@@ -27,10 +30,11 @@ export const useUI = () => {
 interface ToastState { msg: string; undo?: () => void; key: number }
 
 export function UIProvider({ children }: { children: ReactNode }) {
-  const [tab, setTabState] = useState<Tab>('books');
+  const [tab, setTabState] = useState<Tab>('now');
   const [bookId, setBookId] = useState<string | null>(null);
+  const [editOnOpen, setEditOnOpen] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [finishing, setFinishing] = useState<{ bookId: string; readId: string } | null>(null);
+  const [finishing, setFinishing] = useState<Finishing | null>(null);
   const [toastState, setToastState] = useState<ToastState | null>(null);
   const timer = useRef<number | null>(null);
 
@@ -42,10 +46,10 @@ export function UIProvider({ children }: { children: ReactNode }) {
   useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); }, []);
 
   const setTab = useCallback((t: Tab) => { setTabState(t); setBookId(null); window.scrollTo(0, 0); }, []);
-  const openBook = useCallback((id: string | null) => setBookId(id), []);
+  const openBook = useCallback((id: string | null, opts?: { edit?: boolean }) => { setEditOnOpen(!!opts?.edit); setBookId(id); }, []);
 
   return (
-    <Ctx.Provider value={{ tab, setTab, bookId, openBook, adding, setAdding, finishing, setFinishing, toast }}>
+    <Ctx.Provider value={{ tab, setTab, bookId, openBook, editOnOpen, adding, setAdding, finishing, setFinishing, toast }}>
       {children}
       {toastState && (
         <div className="toast" key={toastState.key} role="status">

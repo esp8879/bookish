@@ -17,8 +17,10 @@ export interface Store {
   byId: Map<string, Book>;
   /** First snapshot arrived (from cache or server). */
   loaded: boolean;
-  /** A local write has waited more than ~2 s for the server. */
+  /** Local writes the server hasn't confirmed yet. */
   pending: boolean;
+  /** …and they've been waiting more than a few seconds: weak signal or none. */
+  stuck: boolean;
   online: boolean;
   addBook: (b: { title: string; author: string; reads?: Omit<Read, 'id'>[]; queue?: boolean }) => string;
   update: (id: string, patch: BookPatch) => void;
@@ -56,17 +58,17 @@ async function inBatches<T>(items: T[], write: (batch: ReturnType<typeof writeBa
 export function StoreProvider({ lid, children }: { lid: string; children: ReactNode }) {
   const [all, setAll] = useState<Book[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [pendingRaw, setPendingRaw] = useState(false);
   const [pending, setPending] = useState(false);
+  const [stuck, setStuck] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
   const booksCol = useMemo(() => collection(db, 'libraries', lid, 'books'), [lid]);
 
-  // Debounce the badge: ignore sub-2s round trips.
+  // A write that hasn't reached the server after a few seconds is waiting on signal.
   useEffect(() => {
-    if (!pendingRaw) { setPending(false); return; }
-    const t = window.setTimeout(() => setPending(true), 2000);
+    if (!pending) { setStuck(false); return; }
+    const t = window.setTimeout(() => setStuck(true), 4000);
     return () => window.clearTimeout(t);
-  }, [pendingRaw]);
+  }, [pending]);
 
   // iOS freezes home-screen apps in the background and the Firestore stream goes stale.
   // On return after a long hide, bounce the network so it reconnects immediately.
@@ -92,7 +94,7 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   // The whole library is small: listen to all of it, so every screen works from the local cache offline.
   useEffect(() => onSnapshot(booksCol, { includeMetadataChanges: true }, (snap) => {
     setAll(snap.docs.map((d) => normalizeBook({ id: d.id, ...(d.data() as DocumentData) })));
-    setPendingRaw(snap.metadata.hasPendingWrites);
+    setPending(snap.metadata.hasPendingWrites);
     setLoaded(true);
   }, (err) => console.error('books listener', err)), [booksCol]);
 
@@ -169,8 +171,8 @@ export function StoreProvider({ lid, children }: { lid: string; children: ReactN
   }, [booksCol]);
 
   const value = useMemo<Store>(() => ({
-    lid, books, byId, loaded, pending, online, addBook, update, startReading, endRead, enqueue, dequeue, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary,
-  }), [lid, books, byId, loaded, pending, online, addBook, update, startReading, endRead, enqueue, dequeue, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary]);
+    lid, books, byId, loaded, pending, stuck, online, addBook, update, startReading, endRead, enqueue, dequeue, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary,
+  }), [lid, books, byId, loaded, pending, stuck, online, addBook, update, startReading, endRead, enqueue, dequeue, addHighlights, remove, restore, applyMerge, putBooks, deleteLibrary]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

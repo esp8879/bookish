@@ -21,7 +21,7 @@ No accounts. The library id in the URL path (`/l/<24+ char token>`) is the secre
 - `node scripts/icons.mjs` (after `npm i --no-save playwright-core`) rasterizes `public/icon.svg`.
 
 ## Screens
-Tabs: Books (Reading + Up Next = top 5 of the queue, no adding) · Queue (the whole ordered queue, adding happens only here, new books at the bottom) · Stats (year numbers + that year's books, search across years) · Settings.
+Tabs: the main screen (book-spines mark in the tab bar; ledger line + sync state, Reading rows with swipe actions, Up Next = top 5 of the queue, year-so-far grid from `src/lib/activity.ts`) · Queue (the whole ordered queue, adding happens only here, new books at the bottom) · Stats (year numbers + that year's books, search across years) · Settings.
 
 ## Conventions
 - Look: paper `#F5F0E6`, ink `#2B2520`, library green `#3F5B4A` (dark theme follows the system). Literata (self-hosted in `public/fonts`) for titles, notes and highlights; system sans for UI; small-caps letter-spaced section labels; hairline rules, no cards or shadows, no emoji, no textures.

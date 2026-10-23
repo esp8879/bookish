@@ -11,7 +11,17 @@ import { BookPage } from './components/BookPage';
 import { AddBook } from './components/AddBook';
 import { FinishFlow } from './components/FinishFlow';
 
-const TABS: { id: Tab; label: string }[] = [{ id: 'books', label: 'Books' }, { id: 'queue', label: 'Queue' }, { id: 'stats', label: 'Stats' }, { id: 'settings', label: 'Settings' }];
+const TABS: { id: Tab; label: string }[] = [{ id: 'queue', label: 'Queue' }, { id: 'stats', label: 'Stats' }, { id: 'settings', label: 'Settings' }];
+
+/** The app's book-spines mark: the main screen's tab, set apart from the text tabs. */
+function HomeMark({ on }: { on: boolean }) {
+  return (
+    <svg width="34" height="34" viewBox="0 0 512 512" aria-hidden>
+      <rect width="512" height="512" rx="120" className={on ? 'hm-bg on' : 'hm-bg'} />
+      <g className="hm-fg"><rect x="140" y="150" width="56" height="226" rx="8" /><rect x="212" y="118" width="64" height="258" rx="8" /><rect x="300" y="148" width="54" height="236" rx="8" transform="rotate(14 327 376)" /></g>
+    </svg>
+  );
+}
 
 function UpdatePrompt() {
   const [ready, setReady] = useState(updateReady);
@@ -33,16 +43,17 @@ function Shell() {
   const { tab, setTab, bookId, adding, finishing } = useUI();
   return (
     <div className="app">
-      {tab === 'books' && <Home />}
+      {tab === 'now' && <Home />}
       {tab === 'queue' && <Queue />}
       {tab === 'stats' && <Stats />}
       {tab === 'settings' && <Settings />}
       {bookId && <BookPage key={bookId} id={bookId} />}
       <nav className="tabbar"><div>
+        <button className={`home-tab${tab === 'now' && !bookId ? ' on' : ''}`} aria-label="Now" onClick={() => setTab('now')}><HomeMark on={tab === 'now' && !bookId} /></button>
         {TABS.map((t) => <button key={t.id} className={tab === t.id && !bookId ? 'on' : ''} onClick={() => setTab(t.id)}>{t.label}</button>)}
       </div></nav>
       {adding && <AddBook />}
-      {finishing && <FinishFlow bookId={finishing.bookId} readId={finishing.readId} />}
+      {finishing && <FinishFlow {...finishing} />}
       <UpdatePrompt />
     </div>
   );

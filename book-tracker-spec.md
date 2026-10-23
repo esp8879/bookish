@@ -36,18 +36,22 @@ Dates are calendar strings (`YYYY-MM-DD`, with `YYYY` allowed for imported 2025 
 
 ## Screens
 
-Tabs: **Books · Queue · Stats · Settings**.
+Tab bar: the main screen is the app's book-spines mark on the left, set apart from three quieter text tabs: **Queue · Stats · Settings**.
 
-**Books (home)**, two sections:
-1. **Reading:** every book with a read in progress, all equal (switching between two books is normal). Shows days in.
-2. **Up Next:** the top 5 of the queue. Dragging here reorders the queue itself. No adding here; a link below goes to the queue.
+**Main screen** (no title):
+- **Ledger line:** small caps, "Thu, Oct 22 · 25 books this year" (finished only, not DNFs), with the sync state always shown on the right: Synced / Syncing… / Waiting to sync.
+1. **Reading:** every book with a read in progress, all equal (switching between two books is normal). Shows days in. Swipe left for **Finished · Didn't finish · Edit**; no visible Finish button.
+2. **Up Next:** the top 5 of the queue. Dragging here reorders the queue itself. No adding, no queue link (the tab bar does that).
+3. **The year so far:** a GitHub-style grid, one square per day from Jan 1 to today, weeks as columns. Light green = a book in progress, full green = finished a book that day. Tap a day for what it was.
 
 **Queue:** every book you want to read, in order, drag to reorder. The top 5 carry a small green numeral (they're Up Next); dragging a book into or out of the top 5 is the only way to promote or demote. Books are added only here: title and author (the author field suggests names already in the library), always at the bottom. A queued book that was set aside before shows "Didn't finish · date · N days in" and its note. Searchable once it's long.
 
 **Stats:** a year at a time (year picker). The year's numbers on top (books finished, set aside, books per month, pace), then that year's books, newest first, with notes. Search covers every year: titles, authors and notes.
 
 **Finish flow** (the main moment of use), from a Reading book:
-done or DNF (with an option to put a DNF back at the bottom of the queue) → write the note → "What's next?" showing Up Next, with the whole queue a tap away → start one in a single tap.
+done or DNF (the swipe action picks which; with an option to put a DNF back at the bottom of the queue) → write the note → "What's next?" showing Up Next, with the whole queue a tap away → start one in a single tap.
+
+Sheets (Finish, Add) keep Cancel and Save pinned at the top and ride above the iOS keyboard (they follow `visualViewport`), so nothing is hidden while typing.
 
 **Book page:** every read with its dates and note, plus that book's highlights (highlights are shown here only and are not searched). Buttons: **Read again** for finished books, **Try again** for DNF books. Both start a new read and keep the old ones. Queued books show their position; buttons add a book to the bottom of the queue or remove it.
 

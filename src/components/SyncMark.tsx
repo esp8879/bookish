@@ -1,9 +1,9 @@
 import { useStore } from '../data/store';
 
-/** Quiet marker: shows only when there's something waiting to sync. */
+/** Always-visible sync state. navigator.onLine stays true on weak subway wifi, so a write stuck for a few seconds counts as waiting. */
 export function SyncMark() {
-  const { pending, online } = useStore();
-  if (online && !pending) return null;
-  // navigator.onLine stays true on weak subway wifi, so "pending" alone means "not synced yet".
-  return <span className="sync" role="status">{!online ? (pending ? 'Offline · not synced yet' : 'Offline') : 'Not synced yet'}</span>;
+  const { pending, stuck, online } = useStore();
+  const [label, state] = !pending ? [online ? 'Synced' : 'Synced · offline', 'ok']
+    : !online || stuck ? ['Waiting to sync', 'wait'] : ['Syncing…', 'busy'];
+  return <span className={`sync ${state}`} role="status"><i aria-hidden />{label}</span>;
 }

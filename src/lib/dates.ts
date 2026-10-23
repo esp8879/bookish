@@ -33,3 +33,24 @@ export function fmtRange(started: PartialDate | null, ended: PartialDate | null,
 }
 
 export const MONTH_NAMES = MONTHS;
+
+const LONG_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Day of week, 0 = Sunday, for a 'YYYY-MM-DD'. */
+export const weekday = (d: string) => new Date(toUTC(d)).getUTCDay();
+
+/** "Thursday, October 22" */
+export const fmtLongDay = (d: string) => `${WEEKDAYS[weekday(d)]}, ${LONG_MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}`;
+/** "Thu, Oct 22" */
+export const fmtShortDay = (d: string) => `${WEEKDAYS[weekday(d)].slice(0, 3)}, ${MONTHS[+d.slice(5, 7) - 1]} ${+d.slice(8, 10)}`;
+
+/** Every day from a to b inclusive. */
+export function eachDay(a: string, b: string): string[] {
+  const out: string[] = [];
+  for (let t = toUTC(a), end = toUTC(b); t <= end; t += 86_400_000) {
+    const x = new Date(t);
+    out.push(`${x.getUTCFullYear()}-${pad(x.getUTCMonth() + 1)}-${pad(x.getUTCDate())}`);
+  }
+  return out;
+}
