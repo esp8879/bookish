@@ -43,6 +43,12 @@ export function ReadingRow({ book, read, open, setOpen }: { book: Book; read: Re
         <button className="sw-dnf" onClick={() => act(() => setFinishing({ bookId: book.id, readId: read.id, status: 'dnf' }))}>Didn't finish</button>
         <button className="sw-edit" onClick={() => act(() => openBook(book.id, { edit: true }))}>Edit</button>
       </div>}
+      {/* Mouse and trackpad: the same three actions appear on hover (and keyboard focus), since swiping isn't a pointer gesture. */}
+      <div className="hover-actions">
+        <button className="btn small" onClick={() => setFinishing({ bookId: book.id, readId: read.id, status: 'finished' })}>Finished</button>
+        <button className="btn small" onClick={() => setFinishing({ bookId: book.id, readId: read.id, status: 'dnf' })}>Didn't finish</button>
+        <button className="btn small" onClick={() => openBook(book.id, { edit: true })}>Edit</button>
+      </div>
       <button className={`row-main swipe-front${dx != null ? ' dragging' : ''}`} style={{ transform: `translateX(${x}px)` }}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
         onClick={() => { if (moved.current) return; if (open) setOpen(false); else openBook(book.id); }}>

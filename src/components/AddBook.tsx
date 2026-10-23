@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useStore } from '../data/store';
 import { useUI } from '../ui';
 import { searchText } from '../lib/books';
@@ -18,6 +18,7 @@ export function AddBook() {
   const [ended, setEnded] = useState<string | null>(today());
   const [note, setNote] = useState('');
   const close = () => setAdding(false);
+  const authorRef = useRef<HTMLInputElement>(null);
 
   // Suggest only names already in the library.
   const authors = useMemo(() => [...new Set(books.map((b) => b.author).filter(Boolean))].sort(), [books]);
@@ -37,9 +38,9 @@ export function AddBook() {
 
   return (
     <Sheet title="Add a book" onClose={close} action={<button className="btn primary small" disabled={!title.trim()} onClick={save}>Add</button>}>
-      <Field label="Title"><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus autoCapitalize="words" enterKeyHint="next" /></Field>
+      <Field label="Title"><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus autoCapitalize="words" enterKeyHint="next" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); authorRef.current?.focus(); } }} /></Field>
       <Field label="Author">
-        <input type="text" list="authors" value={author} onChange={(e) => setAuthor(e.target.value)} autoCapitalize="words" enterKeyHint="done" />
+        <input ref={authorRef} type="text" list="authors" value={author} onChange={(e) => setAuthor(e.target.value)} autoCapitalize="words" enterKeyHint="done" onKeyDown={(e) => { if (e.key === 'Enter' && where === 'queue') { e.preventDefault(); save(); } }} />
         <datalist id="authors">{authors.map((a) => <option key={a} value={a} />)}</datalist>
       </Field>
       {existing && (

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { applyUpdate, updateReady } from './sw';
 import { StoreProvider } from './data/store';
 import { createLibrary, openLibrary, resolveLid } from './library';
-import { UIProvider, useUI, type Tab } from './ui';
+import { UIProvider, useUI } from './ui';
 import { Home } from './screens/Home';
 import { Stats } from './screens/Stats';
 import { Queue } from './screens/Queue';
@@ -10,8 +10,6 @@ import { Settings } from './screens/Settings';
 import { BookPage } from './components/BookPage';
 import { AddBook } from './components/AddBook';
 import { FinishFlow } from './components/FinishFlow';
-
-const DRAWERS: { id: Exclude<Tab, 'now'>; label: string }[] = [{ id: 'queue', label: 'Queue' }, { id: 'stats', label: 'Stats' }, { id: 'settings', label: 'Settings' }];
 
 function UpdatePrompt() {
   const [ready, setReady] = useState(updateReady);
@@ -30,7 +28,7 @@ function UpdatePrompt() {
 }
 
 function Shell() {
-  const { tab, setTab, bookId, adding, finishing } = useUI();
+  const { tab, bookId, adding, finishing } = useUI();
   return (
     <div className="app">
       {tab === 'now' && <Home />}
@@ -38,12 +36,6 @@ function Shell() {
       {tab === 'stats' && <Stats />}
       {tab === 'settings' && <Settings />}
       {bookId && <BookPage key={bookId} id={bookId} />}
-      {/* The main screen is home; the rest are drawers opened from this quiet row and closed with "‹ Now". */}
-      {tab === 'now' && !bookId && (
-        <nav className="drawers"><div>
-          {DRAWERS.map((d) => <button key={d.id} onClick={() => setTab(d.id)}>{d.label}</button>)}
-        </div></nav>
-      )}
       {adding && <AddBook />}
       {finishing && <FinishFlow {...finishing} />}
       <UpdatePrompt />

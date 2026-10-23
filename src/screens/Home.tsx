@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useStore } from '../data/store';
-import { useUI } from '../ui';
+import { useUI, type Tab } from '../ui';
 import { queue, readingNow, UP_NEXT, yearStats } from '../lib/books';
 import { fmtShortDay, today } from '../lib/dates';
 import { Label } from '../components/common';
 import { QueueList } from '../components/QueueList';
 import { ReadingRow } from '../components/ReadingRow';
 import { SyncMark } from '../components/SyncMark';
+
+const DRAWERS: { id: Exclude<Tab, 'now'>; label: string }[] = [{ id: 'queue', label: 'Queue' }, { id: 'stats', label: 'Stats' }, { id: 'settings', label: 'Settings' }];
 
 export function Home() {
   const { books, loaded } = useStore();
@@ -28,7 +30,7 @@ export function Home() {
       {empty && (
         <section className="empty">
           <p>Nothing here yet.</p>
-          <p className="muted">Add books on the Queue tab, or bring in your spreadsheet from Settings.</p>
+          <p className="muted">Add books on the Queue screen, or bring in your spreadsheet from Settings.</p>
           <button className="btn primary" onClick={() => setTab('queue')}>Go to the queue</button>
         </section>
       )}
@@ -48,10 +50,15 @@ export function Home() {
       {loaded && !empty && (
         <section>
           <Label>Up Next</Label>
-          {q.length ? <QueueList books={q.slice(0, UP_NEXT)} queue={q} /> : <p className="muted small pad">The queue is empty. Add books on the Queue tab.</p>}
+          {q.length ? <QueueList books={q.slice(0, UP_NEXT)} queue={q} /> : <p className="muted small pad">The queue is empty. Add books on the Queue screen.</p>}
         </section>
       )}
 
+      {/* The main screen is home; the rest are drawers opened from this quiet row and closed with "‹ Now".
+          Pinned to the bottom on a phone; on a wide screen it follows the content. */}
+      <nav className="drawers" aria-label="More">
+        {DRAWERS.map((d) => <button key={d.id} onClick={() => setTab(d.id)}>{d.label}</button>)}
+      </nav>
     </main>
   );
 }

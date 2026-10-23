@@ -7,7 +7,7 @@ import { DateField, Field, Grow, Seg, Sheet } from './common';
 
 /** Finish → done or DNF (optionally back to the queue) → note → "What's next?" from Up Next, with the queue a tap away. */
 export function FinishFlow({ bookId, readId, status: initial = 'finished' }: Finishing) {
-  const { byId, books, endRead, startReading, enqueue } = useStore();
+  const { byId, books, endRead, startReading, enqueue, update } = useStore();
   const { setFinishing, toast } = useUI();
   const book = byId.get(bookId);
   const read = book?.reads.find((r) => r.id === readId);
@@ -25,12 +25,14 @@ export function FinishFlow({ bookId, readId, status: initial = 'finished' }: Fin
     endRead(book.id, read.id, { status, ended: ended || today(), note: note.trim() });
     if (status === 'dnf' && requeue) enqueue(book.id);
     if (q.length) setStep('next');
-    else { close(); toast(status === 'finished' ? `Finished ${book.title}` : `Set ${book.title} aside`); }
+    else { close(); toast(status === 'finished' ? `Finished ${book.title}` : `Marked ${book.title} as didn't finish`); }
   };
   const start = (id: string) => {
+    const next = byId.get(id);
+    const before = next && { reads: next.reads, rank: next.rank };
     startReading(id);
     close();
-    toast(`Started ${byId.get(id)?.title ?? ''}`);
+    toast(`Started ${next?.title ?? ''}`, before && (() => update(id, before)));
   };
 
   if (step === 'next') {

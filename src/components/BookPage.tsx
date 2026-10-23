@@ -1,27 +1,30 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../data/store';
-import { useUI } from '../ui';
+import { TAB_NAMES, useUI } from '../ui';
 import type { Book, Read, ReadStatus } from '../types';
 import { currentRead, daysIn, queue, UP_NEXT } from '../lib/books';
 import { fmtRange, today } from '../lib/dates';
 import { highlightId } from '../lib/clippings';
 import { titleCase, nameCase } from '../lib/titlecase';
-import { DateField, Field, Grow, Label, Seg, useBodyLock } from './common';
+import { DateField, Field, Grow, Label, ScreenHeader, Seg, useBodyLock } from './common';
 
 const STATUS_LABEL: Record<ReadStatus, string> = { reading: 'Reading', finished: 'Finished', dnf: "Didn't finish" };
 
 function ReadEditor({ book, read, onDone }: { book: Book; read: Read; onDone: () => void }) {
   const { update } = useStore();
+  const { toast } = useUI();
   const [r, setR] = useState(read);
   const save = () => {
     const fixed = { ...r, note: r.note.trim(), ended: r.status === 'reading' ? null : r.ended ?? today() };
     update(book.id, { reads: book.reads.map((x) => (x.id === r.id ? fixed : x)) });
     onDone();
   };
+  // No confirm dialog: deleting is undoable from the toast, like every other removal.
   const remove = () => {
-    if (!confirm('Delete this read? Its dates and note go with it.')) return;
-    update(book.id, { reads: book.reads.filter((x) => x.id !== r.id) });
+    const before = book.reads;
+    update(book.id, { reads: before.filter((x) => x.id !== r.id) });
     onDone();
+    toast('Read deleted', () => update(book.id, { reads: before }));
   };
   return (
     <div className="editor">
@@ -41,7 +44,7 @@ function ReadEditor({ book, read, onDone }: { book: Book; read: Read; onDone: ()
 
 export function BookPage({ id }: { id: string }) {
   const store = useStore();
-  const { openBook, setFinishing, toast, editOnOpen } = useUI();
+  const { openBook, setFinishing, toast, editOnOpen, tab } = useUI();
   const book = store.byId.get(id);
   const [editingRead, setEditingRead] = useState<string | null>(null);
   const [editingBook, setEditingBook] = useState(editOnOpen);
@@ -62,6 +65,12 @@ export function BookPage({ id }: { id: string }) {
   const pos = now ? -1 : queue(store.books).findIndex((b) => b.id === book.id);
   const queued = pos >= 0;
 
+  /** Run a change to this book's reads and queue place, with an Undo that puts both back. */
+  const undoable = (msg: string, change: () => void) => {
+    const before = { reads: book.reads, rank: book.rank };
+    change();
+    toast(msg, () => store.update(book.id, before));
+  };
   const del = () => {
     store.remove(book.id);
     openBook(null);
@@ -85,11 +94,8 @@ export function BookPage({ id }: { id: string }) {
 
   return (
     <div className="page" role="dialog" aria-label={book.title}>
-      <div className="page-bar">
-        <button className="btn link" onClick={() => openBook(null)}>‹ Back</button>
-        {!editingBook && <button className="btn link" onClick={() => { setTitle(book.title); setAuthor(book.author); setEditingBook(true); }}>Edit</button>}
-      </div>
-
+      <ScreenHeader back={{ label: TAB_NAMES[tab], onClick: () => openBook(null) }}
+        action={!editingBook && <button className="btn link" onClick={() => { setTitle(book.title); setAuthor(book.author); setEditingBook(true); }}>Edit</button>}>
       {editingBook ? (
         <div className="editor">
           <Field label="Title"><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
@@ -102,20 +108,21 @@ export function BookPage({ id }: { id: string }) {
           </div>
         </div>
       ) : (
-        <header className="book-head">
+        <div className="book-head">
           <h1 className="book-title">{book.title}</h1>
           {book.author && <div className="book-author">{book.author}</div>}
           {queued && <div className="book-pos">{pos < UP_NEXT ? `Up Next · #${pos + 1}` : `#${pos + 1} in the queue`}</div>}
-        </header>
+        </div>
       )}
+      </ScreenHeader>
 
       <div className="book-actions">
         {now && <button className="btn primary" onClick={() => setFinishing({ bookId: book.id, readId: now.id })}>Finish</button>}
-        {!now && <button className={`btn${queued ? ' primary' : ''}`} onClick={() => { store.startReading(book.id); toast(`Started ${book.title}`); }}>
+        {!now && <button className={`btn${queued ? ' primary' : ''}`} onClick={() => undoable(`Started ${book.title}`, () => store.startReading(book.id))}>
           {queued || !last ? 'Start reading' : last.status === 'dnf' ? 'Try again now' : 'Read again'}
         </button>}
-        {!now && !queued && <button className="btn" onClick={() => { store.enqueue(book.id); toast('Added to the bottom of the queue'); }}>{last?.status === 'dnf' ? 'Back to the queue' : 'Add to the queue'}</button>}
-        {queued && <button className="btn" onClick={() => { store.dequeue(book.id); toast('Removed from the queue'); }}>Remove from queue</button>}
+        {!now && !queued && <button className="btn" onClick={() => undoable('Added to the bottom of the queue', () => store.enqueue(book.id))}>{last?.status === 'dnf' ? 'Back to the queue' : 'Add to the queue'}</button>}
+        {queued && <button className="btn" onClick={() => undoable('Removed from the queue', () => store.dequeue(book.id))}>Remove from queue</button>}
       </div>
 
       {book.reads.length > 0 && (
@@ -130,7 +137,7 @@ export function BookPage({ id }: { id: string }) {
                       <span className={r.status === 'dnf' ? 'dnf' : ''}>{STATUS_LABEL[r.status]}</span>
                       <span>{r.status === 'reading' ? `${fmtRange(r.started, null)}${daysIn(r) != null ? ` · day ${daysIn(r)! + 1}` : ''}` : fmtRange(r.started, r.ended)}</span>
                     </span>
-                    {r.note ? <span className="note">{r.note}</span> : <span className="muted small">No note. Tap to add one.</span>}
+                    {r.note ? <span className="note">{r.note}</span> : <span className="add-note">Add a note</span>}
                   </button>
                 )}
               </li>

@@ -53,10 +53,26 @@ export function Sheet({ title, onClose, children, action }: { title: string; onC
   );
 }
 
-/** Top of a drawer screen (Queue, Stats, Settings): back to the main screen. */
-export function BackToNow({ onBack }: { onBack: () => void }) {
-  return <div className="back-bar"><button className="btn link" onClick={onBack}>‹ Now</button></div>;
+/**
+ * The top of every screen but the main one: a nav row with back on the left (named for where it goes)
+ * and the screen's one action on the right, then the title row.
+ */
+export function ScreenHeader({ back, action, children }: { back: { label: string; onClick: () => void }; action?: ReactNode; children: ReactNode }) {
+  return (
+    <header className="screen-head">
+      <div className="screen-nav">
+        <button className="btn link back" onClick={back.onClick}><span aria-hidden>‹</span> {back.label}</button>
+        {action}
+      </div>
+      <div className="screen-title">{children}</div>
+    </header>
+  );
 }
+
+/** Magnifier for search buttons. */
+export const SearchIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M12.6 12.6L17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+);
 
 /** Section label in the card-catalog style: small caps with a hairline running to the edge. */
 export function Label({ children, right }: { children: ReactNode; right?: ReactNode }) {

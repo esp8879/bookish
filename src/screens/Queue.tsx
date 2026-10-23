@@ -3,11 +3,11 @@ import { useStore } from '../data/store';
 import { useUI } from '../ui';
 import { currentRead, lastRead, queue, searchText, UP_NEXT } from '../lib/books';
 import { QueueList, SetAside } from '../components/QueueList';
-import { BackToNow } from '../components/common';
+import { ScreenHeader } from '../components/common';
 
-/** Every book you want to read, in order. The top five are Up Next on the Books tab. */
+/** Every book you want to read, in order. The top five are Up Next on the main screen. */
 export function Queue() {
-  const { books, enqueue } = useStore();
+  const { books, enqueue, dequeue } = useStore();
   const { setAdding, setTab, openBook, toast } = useUI();
   const [showDnf, setShowDnf] = useState(false);
   // Set-aside books that aren't queued: candidates to try again.
@@ -23,11 +23,10 @@ export function Queue() {
 
   return (
     <main className="screen drawer">
-      <BackToNow onBack={() => setTab('now')} />
-      <header className="masthead">
+      <ScreenHeader back={{ label: 'Now', onClick: () => setTab('now') }} action={<button className="btn link" onClick={() => setAdding(true)}>Add book</button>}>
         <h1 className="wordmark">Queue</h1>
-        <button className="btn link" onClick={() => setAdding(true)}>Add</button>
-      </header>
+        {list.length > 0 && <span className="screen-sub">{list.length} {list.length === 1 ? 'book' : 'books'}</span>}
+      </ScreenHeader>
       {list.length > 8 && <input type="search" className="search" placeholder="Search the queue" value={q} onChange={(e) => setQ(e.target.value)} />}
       {list.length ? (
         <section>
@@ -58,7 +57,7 @@ export function Queue() {
                     {b.author && <span className="author">{b.author}</span>}
                     <SetAside book={b} />
                   </button>
-                  <button className="btn small" onClick={() => { enqueue(b.id); toast(`${b.title} is back in the queue, at the bottom`); }}>Queue</button>
+                  <button className="btn small" onClick={() => { enqueue(b.id); toast(`${b.title} is back in the queue, at the bottom`, () => dequeue(b.id)); }}>Queue</button>
                 </li>
               ))}
             </ul>

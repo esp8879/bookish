@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 export type Tab = 'now' | 'queue' | 'stats' | 'settings';
+/** Names used for back buttons, so "‹ Queue" says where it goes. */
+export const TAB_NAMES: Record<Tab, string> = { now: 'Now', queue: 'Queue', stats: 'Stats', settings: 'Settings' };
 export interface Finishing { bookId: string; readId: string; status?: 'finished' | 'dnf' }
 
 interface UI {

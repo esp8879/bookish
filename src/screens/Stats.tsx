@@ -3,7 +3,7 @@ import { useStore } from '../data/store';
 import { useUI } from '../ui';
 import { history, matchesSearch, years, yearStats, type HistoryItem } from '../lib/books';
 import { fmtRange, MONTH_NAMES, yearOf } from '../lib/dates';
-import { BackToNow, Label } from '../components/common';
+import { Label, ScreenHeader, SearchIcon } from '../components/common';
 
 /** Finished books per month: one series, so no legend; the busiest month is labeled, the rest on tap. */
 function MonthBars({ counts }: { counts: number[] }) {
@@ -83,31 +83,26 @@ export function Stats() {
 
   return (
     <main className="screen drawer">
-      <BackToNow onBack={() => setTab('now')} />
-      <header className="masthead">
+      <ScreenHeader back={{ label: 'Now', onClick: () => setTab('now') }} action={searching
+        ? <button className="btn link" onClick={() => { setSearching(false); setQ(''); }}>Done</button>
+        : all.length > 0 && <button className="icon-btn" aria-label="Search every year" onClick={() => setSearching(true)}><SearchIcon /></button>}>
         {searching ? (
-          <div className="search-row">
-            <input type="search" className="search" placeholder="Titles, authors, notes" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
-            <button className="btn link" onClick={() => { setSearching(false); setQ(''); }}>Cancel</button>
-          </div>
-        ) : <>
-          {/* The year is the heading; a native select so a long list of years stays one tap. */}
+          <input type="search" className="search" placeholder="Titles, authors, notes" aria-label="Search every year" value={q} onChange={(e) => setQ(e.target.value)} autoFocus />
+        ) : (
+          /* The year is the heading; a native select so a long list of years stays one tap. */
           <label className="year-select">
             <span className="wordmark">{year}</span>
             {ys.length > 1 && <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>}
             {ys.length > 1 && <select aria-label="Year" value={year} onChange={(e) => setYear(+e.target.value)}>{ys.map((y) => <option key={y} value={y}>{y}</option>)}</select>}
           </label>
-          {all.length > 0 && <button className="icon-btn" aria-label="Search every year" onClick={() => setSearching(true)}>
-            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M12.6 12.6L17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
-          </button>}
-        </>}
-      </header>
+        )}
+      </ScreenHeader>
 
       {q.trim() ? <SearchResults items={found} q={q} /> : <>
 
       <section className="tally">
         <div><span className="tally-n">{s.finished.length}</span><span className="tally-l">{s.finished.length === 1 ? 'book finished' : 'books finished'}</span></div>
-        {s.dnf.length > 0 && <div><span className="tally-n small">{s.dnf.length}</span><span className="tally-l">set aside</span></div>}
+        {s.dnf.length > 0 && <div><span className="tally-n small">{s.dnf.length}</span><span className="tally-l">didn't finish</span></div>}
       </section>
 
       {dated && (

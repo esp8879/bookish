@@ -5,7 +5,7 @@ import { libraryUrl } from '../library';
 import { toCSV, toJSON, toMarkdown } from '../lib/export';
 import { pickFile, saveFile } from '../lib/files';
 import { today } from '../lib/dates';
-import { BackToNow, Label } from '../components/common';
+import { Label, ScreenHeader } from '../components/common';
 import { ImportConfirm, readImport, type ImportKind, type ImportState } from '../components/Imports';
 
 const ACCEPT: Record<ImportKind, string> = {
@@ -18,7 +18,8 @@ export function Settings() {
   const store = useStore();
   const { toast, setTab } = useUI();
   const [importing, setImporting] = useState<ImportState | null>(null);
-  const [busy, setBusy] = useState(false);
+  /** Which import is reading its file, or that the library is being deleted: shown on the button itself. */
+  const [busy, setBusy] = useState<ImportKind | 'delete' | null>(null);
   const [confirmDelete, setConfirmDelete] = useState('');
   const url = libraryUrl(store.lid);
 
@@ -29,14 +30,14 @@ export function Settings() {
   const runImport = async (kind: ImportKind) => {
     const file = await pickFile(ACCEPT[kind]);
     if (!file) return;
-    setBusy(true);
+    setBusy(kind);
     try {
       const r = await readImport(kind, file, store.books);
       if (typeof r === 'string') toast(r); else setImporting(r);
     } catch (e) {
       console.error(e);
       toast("Couldn't read that file.");
-    } finally { setBusy(false); }
+    } finally { setBusy(null); }
   };
   const exp = async (fmt: 'json' | 'csv' | 'md') => {
     const name = `books-${today()}.${fmt}`;
@@ -47,16 +48,15 @@ export function Settings() {
   };
 
   return (
-    <main className="screen drawer">
-      <BackToNow onBack={() => setTab('now')} />
-      <header className="masthead"><h1 className="wordmark">Settings</h1></header>
+    <main className="screen drawer settings">
+      <ScreenHeader back={{ label: 'Now', onClick: () => setTab('now') }}><h1 className="wordmark">Settings</h1></ScreenHeader>
 
       <section>
         <Label>Your library link</Label>
-        <p className="small">This link is the key to your library. There's no account and no password: anyone with the link can read and change it. Keep a copy somewhere safe, like your password manager.</p>
+        <p className="small">The link is the key: no account, no password, and anyone who has it can read and change your library. Keep a copy somewhere safe.</p>
         <div className="link-box"><code>{url}</code></div>
         <button className="btn block" onClick={() => void copy()}>Copy link</button>
-        <p className="muted small">On iPhone, open the link in Safari, then Share → Add to Home Screen. Installed, it opens and works with no signal.</p>
+        <p className="muted small">On iPhone: open it in Safari, then Share → Add to Home Screen. Installed, it works with no signal.</p>
       </section>
 
       <section>
@@ -72,9 +72,9 @@ export function Settings() {
       <section>
         <Label>Import</Label>
         <div className="stack">
-          <button className="btn block" disabled={busy} onClick={() => void runImport('clippings')}>Kindle highlights (My Clippings.txt)</button>
-          <button className="btn block" disabled={busy} onClick={() => void runImport('spreadsheet')}>Spreadsheet (.xlsx)</button>
-          <button className="btn block" disabled={busy} onClick={() => void runImport('json')}>Restore from a JSON export</button>
+          <button className="btn block" disabled={!!busy} onClick={() => void runImport('clippings')}>{busy === 'clippings' ? 'Reading file…' : 'Kindle highlights (My Clippings.txt)'}</button>
+          <button className="btn block" disabled={!!busy} onClick={() => void runImport('spreadsheet')}>{busy === 'spreadsheet' ? 'Reading file…' : 'Spreadsheet (.xlsx)'}</button>
+          <button className="btn block" disabled={!!busy} onClick={() => void runImport('json')}>{busy === 'json' ? 'Reading file…' : 'Restore from a JSON export'}</button>
         </div>
         <p className="muted small">Importing the same file twice changes nothing.</p>
       </section>
@@ -89,7 +89,7 @@ export function Settings() {
         <p className="muted small">Permanently deletes every book, note and highlight, on every device. Export first. Type <strong>delete</strong> to confirm.</p>
         <div className="btn-row">
           <input type="text" value={confirmDelete} onChange={(e) => setConfirmDelete(e.target.value)} placeholder="delete" autoCapitalize="none" />
-          <button className="btn danger" disabled={confirmDelete.trim().toLowerCase() !== 'delete' || !store.online} onClick={() => void store.deleteLibrary()}>Delete</button>
+          <button className="btn danger" disabled={confirmDelete.trim().toLowerCase() !== 'delete' || !store.online || !!busy} onClick={() => { setBusy('delete'); void store.deleteLibrary(); }}>{busy === 'delete' ? 'Deleting…' : 'Delete'}</button>
         </div>
         {!store.online && <p className="muted small">Needs a connection.</p>}
       </section>
