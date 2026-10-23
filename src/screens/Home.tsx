@@ -20,7 +20,7 @@ export function Home() {
   const empty = loaded && books.length === 0;
 
   return (
-    <main className="screen">
+    <main className="screen home">
       <header className="ledger">
         <span>{fmtShortDay(day)} · {finished} {finished === 1 ? 'book' : 'books'} this year</span>
         <SyncMark />
@@ -37,7 +37,8 @@ export function Home() {
       {reading.length > 0 && (
         <section>
           <Label>Reading</Label>
-          <ul className="list">
+          {/* With two books in progress each title gets one line, so the screen still fits without scrolling. */}
+          <ul className={`list${reading.length > 1 ? ' two' : ''}`}>
             {reading.map(({ book, read }) => (
               <ReadingRow key={read.id} book={book} read={read} open={swiped === read.id} setOpen={(v) => setSwiped(v ? read.id : null)} />
             ))}
@@ -53,10 +54,7 @@ export function Home() {
       )}
 
       {loaded && !empty && (
-        <section>
-          <Label>The year so far</Label>
-          <YearGrid books={books} />
-        </section>
+        <YearGrid books={books} />
       )}
     </main>
   );

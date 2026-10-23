@@ -1,48 +1,45 @@
 import { useMemo, useState } from 'react';
 import type { Book } from '../types';
-import { weekColumns, yearActivity, type ActivityDay } from '../lib/activity';
+import { monthWeeks, type WeekCell } from '../lib/activity';
 import { fmtDate, MONTH_NAMES, today } from '../lib/dates';
+import { Label } from './common';
 
-const level = (d: ActivityDay) => (d.finished.length ? 2 : d.reading.length ? 1 : 0);
-
-function describe(d: ActivityDay) {
-  if (d.finished.length) return `Finished ${d.finished.join(', ')}`;
-  if (d.reading.length) return `Reading ${d.reading.join(', ')}`;
+function describe(c: WeekCell) {
+  if (c.finished.length) return `Finished ${c.finished.join(', ')}`;
+  if (c.reading.length) return `Reading ${c.reading.join(', ')}`;
   return 'No book in progress';
 }
+const range = (c: WeekCell) => (c.from === c.to ? fmtDate(c.from) : `${fmtDate(c.from)} – ${+c.to.slice(8, 10)}`);
 
 /**
- * The year so far, a square per day, weeks as columns (GitHub style). One hue in two steps:
- * a light wash on days with a book in progress, full green on days a book was finished.
+ * The year so far at the grain of weeks: twelve month columns of up to five squares.
+ * One hue in two steps: a wash for weeks with a book in progress, full green for weeks a book was finished.
  */
 export function YearGrid({ books }: { books: Book[] }) {
   const now = today();
   const year = +now.slice(0, 4);
-  const cols = useMemo(() => weekColumns(yearActivity(books, year, now)), [books, year, now]);
-  const [picked, setPicked] = useState<ActivityDay | null>(null);
-  // Month labels sit over the first column that contains the 1st of that month.
-  const months = useMemo(() => cols.map((c) => c.find((d) => d?.day.endsWith('-01'))).map((d) => (d ? MONTH_NAMES[+d.day.slice(5, 7) - 1] : '')), [cols]);
+  const months = useMemo(() => monthWeeks(books, year, now), [books, year, now]);
+  const [picked, setPicked] = useState<WeekCell | null>(null);
 
   return (
-    <figure className="year-grid" aria-label={`Reading activity in ${year} so far`}>
-      <div className="yg-months" style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 12px))` }} aria-hidden>
-        {months.map((m, i) => <span key={i}>{m}</span>)}
-      </div>
-      <div className="yg-cells" style={{ gridTemplateColumns: `repeat(${cols.length}, minmax(0, 12px))` }} onPointerLeave={() => setPicked(null)}>
-        {cols.map((col, i) => (
-          <div key={i} className="yg-col">
-            {col.map((d, j) => d
-              ? <button key={j} className={`yg l${level(d)}${d.day === now ? ' today' : ''}${picked?.day === d.day ? ' on' : ''}`} aria-label={`${fmtDate(d.day)}: ${describe(d)}`}
-                  onPointerEnter={(e) => { if (e.pointerType === 'mouse') setPicked(d); }} onClick={() => setPicked(picked?.day === d.day ? null : d)} />
-              : <span key={j} className="yg blank" />)}
+    <section>
+    {/* The label's right side carries the legend, or the tapped week, so the grid needs no caption row. */}
+    <Label right={<span className="yg-caption">{picked ? <><span className="meta">{range(picked)}</span> · {describe(picked)}</> : (
+      <span className="yg-legend"><i className="yg l1" />Reading<i className="yg l2" />Finished</span>
+    )}</span>}>{year} so far</Label>
+    <figure className="year-grid" aria-label={`Reading by week in ${year} so far`}>
+      <div className="yg-months" onPointerLeave={() => setPicked(null)}>
+        {months.map((cells, m) => (
+          <div key={m} className="yg-month">
+            {cells.map((c) => c.future
+              ? <span key={c.from} className="yg future" />
+              : <button key={c.from} className={`yg l${c.level}${picked?.from === c.from ? ' on' : ''}`} aria-label={`${range(c)}: ${describe(c)}`}
+                  onPointerEnter={(e) => { if (e.pointerType === 'mouse') setPicked(c); }} onClick={() => setPicked(picked?.from === c.from ? null : c)} />)}
+            <span className="yg-m" aria-hidden>{MONTH_NAMES[m][0]}</span>
           </div>
         ))}
       </div>
-      <figcaption className="yg-caption">
-        {picked ? <><span className="meta">{fmtDate(picked.day)}</span> · {describe(picked)}</> : (
-          <span className="yg-legend"><i className="yg l1" />Reading<i className="yg l2" />Finished</span>
-        )}
-      </figcaption>
     </figure>
+    </section>
   );
 }

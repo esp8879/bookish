@@ -5,7 +5,7 @@ import { daysBetween, fmtDate, isFullDate } from '../lib/dates';
 import { useStore } from '../data/store';
 import { useUI } from '../ui';
 
-interface Drag { id: string; from: number; to: number; startY: number; dy: number; tops: number[]; heights: number[] }
+interface Drag { id: string; from: number; to: number; startY: number; scrollY: number; dy: number; tops: number[]; heights: number[] }
 
 /** "Didn't finish · Aug 20 · 3 days in" for a queued book that was set aside before. */
 function SetAside({ book }: { book: Book }) {
@@ -35,11 +35,12 @@ export function QueueList({ books, queue, sortable = true, numbered = false }: {
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     const rects = rows.current.slice(0, books.length).map((r) => r!.getBoundingClientRect());
-    setDrag({ id: books[i].id, from: i, to: i, startY: e.clientY, dy: 0, tops: rects.map((r) => r.top), heights: rects.map((r) => r.height) });
+    setDrag({ id: books[i].id, from: i, to: i, startY: e.clientY, scrollY: window.scrollY, dy: 0, tops: rects.map((r) => r.top), heights: rects.map((r) => r.height) });
   };
   const move = (e: PointerEvent) => {
     if (!drag) return;
-    const dy = e.clientY - drag.startY;
+    // Row positions were measured in page terms at the start; if the page scrolls mid-drag, follow it.
+    const dy = e.clientY - drag.startY + (window.scrollY - drag.scrollY);
     const center = drag.tops[drag.from] + dy + drag.heights[drag.from] / 2;
     let to = 0;
     for (let i = 0; i < drag.tops.length; i++) if (center > drag.tops[i] + drag.heights[i] / 2) to = i;

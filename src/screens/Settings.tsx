@@ -5,7 +5,7 @@ import { libraryUrl } from '../library';
 import { toCSV, toJSON, toMarkdown } from '../lib/export';
 import { pickFile, saveFile } from '../lib/files';
 import { today } from '../lib/dates';
-import { Label } from '../components/common';
+import { BackToNow, Label } from '../components/common';
 import { ImportConfirm, readImport, type ImportKind, type ImportState } from '../components/Imports';
 
 const ACCEPT: Record<ImportKind, string> = {
@@ -16,7 +16,7 @@ const ACCEPT: Record<ImportKind, string> = {
 
 export function Settings() {
   const store = useStore();
-  const { toast } = useUI();
+  const { toast, setTab } = useUI();
   const [importing, setImporting] = useState<ImportState | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState('');
@@ -47,7 +47,8 @@ export function Settings() {
   };
 
   return (
-    <main className="screen">
+    <main className="screen drawer">
+      <BackToNow onBack={() => setTab('now')} />
       <header className="masthead"><h1 className="wordmark">Settings</h1></header>
 
       <section>

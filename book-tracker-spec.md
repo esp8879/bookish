@@ -36,13 +36,15 @@ Dates are calendar strings (`YYYY-MM-DD`, with `YYYY` allowed for imported 2025 
 
 ## Screens
 
-Tab bar: the main screen is the app's book-spines mark on the left, set apart from three quieter text tabs: **Queue · Stats · Settings**.
+Navigation: **home + drawers**. The main screen is home and has no tab bar, only a quiet small-caps row at the bottom: **Queue · Stats · Settings**. Each opens as a drawer screen with **‹ Now** at the top to go back.
+
+**Fit:** the main screen fits an iPhone 17 Pro (402×874pt) without scrolling with up to **2 books reading and 5 up next** (1 reading is the usual case). Up Next titles and authors are one line each; with two books reading, their titles are one line too.
 
 **Main screen** (no title):
 - **Ledger line:** small caps, "Thu, Oct 22 · 25 books this year" (finished only, not DNFs), with the sync state always shown on the right: Synced / Syncing… / Waiting to sync.
 1. **Reading:** every book with a read in progress, all equal (switching between two books is normal). Shows days in. Swipe left for **Finished · Didn't finish · Edit**; no visible Finish button.
 2. **Up Next:** the top 5 of the queue. Dragging here reorders the queue itself. No adding, no queue link (the tab bar does that).
-3. **The year so far:** a GitHub-style grid, one square per day from Jan 1 to today, weeks as columns. Light green = a book in progress, full green = finished a book that day. Tap a day for what it was.
+3. **2026 so far:** twelve month columns of week squares (days 1–7, 8–14, 15–21, 22–28, 29–end). Light green = a book in progress that week, full green = finished a book; weeks still to come are faint outlines. The legend sits in the section label, and tapping a week shows what it was in the same spot.
 
 **Queue:** every book you want to read, in order, drag to reorder. The top 5 carry a small green numeral (they're Up Next); dragging a book into or out of the top 5 is the only way to promote or demote. Books are added only here: title and author (the author field suggests names already in the library), always at the bottom. A queued book that was set aside before shows "Didn't finish · date · N days in" and its note. Searchable once it's long.
 

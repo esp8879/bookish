@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Book, Read } from '../../types';
 import { titleCase, nameCase } from '../titlecase';
 import { daysBetween, fmtDate, fmtLongDay, fmtRange } from '../dates';
-import { weekColumns, yearActivity } from '../activity';
+import { monthWeeks, yearActivity } from '../activity';
 import { history, normalizeBook, queue, rankAt, readingNow, upNext, yearStats } from '../books';
 import { sheetsToIncoming, cellDate } from '../spreadsheet';
 import { planMerge } from '../importer';
@@ -204,11 +204,15 @@ describe('year activity', () => {
     expect(days.get('2026-01-05')).toMatchObject({ reading: ['Phlebas'], finished: [] });
     expect(days.get('2026-01-10')?.reading).toEqual(['Memory']);
   });
-  it('weeks start on Sunday', () => {
-    const cols = weekColumns(days);
-    // Jan 1 2026 is a Thursday: four blanks first.
-    expect(cols[0].slice(0, 5).map((d) => d?.day ?? null)).toEqual([null, null, null, null, '2026-01-01']);
-    expect(cols.every((c) => c.length === 7)).toBe(true);
-    expect(fmtLongDay('2026-10-22')).toBe('Thursday, October 22');
+  it('month weeks: five buckets per month, future ones flagged', () => {
+    const m = monthWeeks(lib, 2026, '2026-01-10');
+    expect(m).toHaveLength(12);
+    expect(m[0]).toHaveLength(5);
+    expect(m[1]).toHaveLength(4); // Feb 2026 has 28 days
+    expect(m[0][0]).toMatchObject({ from: '2026-01-01', to: '2026-01-07', level: 2, finished: ['Ruin'], future: false });
+    expect(m[0][1]).toMatchObject({ to: '2026-01-10', level: 1, reading: ['Memory'] });
+    expect(m[0][2].future).toBe(true);
+    expect(m[5][0].future).toBe(true);
   });
+  it('long day format', () => expect(fmtLongDay('2026-10-22')).toBe('Thursday, October 22'));
 });

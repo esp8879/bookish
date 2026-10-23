@@ -3,7 +3,7 @@ import { useStore } from '../data/store';
 import { useUI } from '../ui';
 import { history, matchesSearch, years, yearStats, type HistoryItem } from '../lib/books';
 import { fmtRange, MONTH_NAMES, yearOf } from '../lib/dates';
-import { Label } from '../components/common';
+import { BackToNow, Label } from '../components/common';
 
 /** Finished books per month: one series, so no legend; the busiest month is labeled, the rest on tap. */
 function MonthBars({ counts }: { counts: number[] }) {
@@ -70,6 +70,7 @@ function SearchResults({ items, q }: { items: HistoryItem[]; q: string }) {
 /** Everything finished or set aside: a year at a time, with that year's numbers on top. */
 export function Stats() {
   const { books } = useStore();
+  const { setTab } = useUI();
   const ys = useMemo(() => years(books), [books]);
   const [year, setYear] = useState(ys[0]);
   const [q, setQ] = useState('');
@@ -80,7 +81,8 @@ export function Stats() {
   const dated = s.perMonth.some((c) => c > 0);
 
   return (
-    <main className="screen">
+    <main className="screen drawer">
+      <BackToNow onBack={() => setTab('now')} />
       <header className="masthead">
         <h1 className="wordmark">{q.trim() ? 'Search' : year}</h1>
         {ys.length > 1 && !q.trim() && (

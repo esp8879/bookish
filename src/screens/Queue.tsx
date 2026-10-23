@@ -3,11 +3,12 @@ import { useStore } from '../data/store';
 import { useUI } from '../ui';
 import { queue, searchText, UP_NEXT } from '../lib/books';
 import { QueueList } from '../components/QueueList';
+import { BackToNow } from '../components/common';
 
 /** Every book you want to read, in order. The top five are Up Next on the Books tab. */
 export function Queue() {
   const { books } = useStore();
-  const { setAdding } = useUI();
+  const { setAdding, setTab } = useUI();
   const [q, setQ] = useState('');
   const list = useMemo(() => queue(books), [books]);
   const shown = useMemo(() => {
@@ -17,7 +18,8 @@ export function Queue() {
   const searching = !!q.trim();
 
   return (
-    <main className="screen">
+    <main className="screen drawer">
+      <BackToNow onBack={() => setTab('now')} />
       <header className="masthead">
         <h1 className="wordmark">Queue</h1>
         <button className="btn link" onClick={() => setAdding(true)}>Add</button>

@@ -53,6 +53,11 @@ export function Sheet({ title, onClose, children, action }: { title: string; onC
   );
 }
 
+/** Top of a drawer screen (Queue, Stats, Settings): back to the main screen. */
+export function BackToNow({ onBack }: { onBack: () => void }) {
+  return <div className="back-bar"><button className="btn link" onClick={onBack}>‹ Now</button></div>;
+}
+
 /** Section label in the card-catalog style: small caps with a hairline running to the edge. */
 export function Label({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return <div className="label"><span>{children}</span><i />{right}</div>;
