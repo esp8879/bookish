@@ -1,29 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useStore } from '../data/store';
 import { useUI } from '../ui';
-import { daysIn, history, matchesSearch, pile, readingNow, type HistoryItem } from '../lib/books';
-import { fmtRange, yearOf } from '../lib/dates';
+import { daysIn, queue, readingNow, upNext, UP_NEXT_MAX } from '../lib/books';
 import { Label } from '../components/common';
-import { PileList } from '../components/PileList';
+import { ShelfList } from '../components/ShelfList';
 import { SyncMark } from '../components/SyncMark';
 
 export function Home() {
   const { books, loaded } = useStore();
-  const { openBook, setAdding, setFinishing } = useUI();
-  const [q, setQ] = useState('');
+  const { openBook, setAdding, setFinishing, setTab } = useUI();
   const reading = useMemo(() => readingNow(books), [books]);
-  const up = useMemo(() => pile(books), [books]);
-  const read = useMemo(() => history(books), [books]);
-  const shown = useMemo(() => read.filter((i) => matchesSearch(i, q)), [read, q]);
-  const byYear = useMemo(() => {
-    const groups: { year: number | null; items: HistoryItem[] }[] = [];
-    for (const i of shown) {
-      const y = yearOf(i.read.ended);
-      if (groups[groups.length - 1]?.year !== y) groups.push({ year: y, items: [] });
-      groups[groups.length - 1].items.push(i);
-    }
-    return groups;
-  }, [shown]);
+  const up = useMemo(() => upNext(books), [books]);
+  const queued = useMemo(() => queue(books).length, [books]);
 
   const empty = loaded && books.length === 0;
 
@@ -38,7 +26,7 @@ export function Home() {
         <section className="empty">
           <p>Nothing here yet.</p>
           <p className="muted">Add the book you're reading, or bring in your spreadsheet from Settings.</p>
-          <button className="btn primary" onClick={() => setAdding(true)}>Add a book</button>
+          <button className="btn primary" onClick={() => setAdding('queue')}>Add a book</button>
         </section>
       )}
 
@@ -64,32 +52,13 @@ export function Home() {
 
       {loaded && !empty && (
         <section>
-          <Label right={<button className="btn link small" onClick={() => setAdding(true)}>Add</button>}>Up Next</Label>
-          {up.length ? <PileList books={up} /> : <p className="muted small pad">The pile is empty.</p>}
-        </section>
-      )}
-
-      {read.length > 0 && (
-        <section>
-          <Label>Read</Label>
-          <input type="search" className="search" placeholder="Search titles, authors, notes" value={q} onChange={(e) => setQ(e.target.value)} />
-          {byYear.map((g) => (
-            <div key={g.year ?? 'none'} className="year-group">
-              <h3 className="year-head">{g.year ?? 'Undated'}<span>{g.items.length}</span></h3>
-              <ul className="list">
-                {g.items.map(({ book, read: r }) => (
-                  <li key={r.id}>
-                    <button className="row-main" onClick={() => openBook(book.id)}>
-                      <span className="title">{book.title}</span>
-                      <span className="author">{book.author}<span className="meta"> · {fmtRange(r.started, r.ended)}</span>{r.status === 'dnf' && <span className="dnf"> · Didn't finish</span>}</span>
-                      {r.note && <span className="note clamp">{r.note}</span>}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-          {q && !shown.length && <p className="muted small pad">Nothing matches “{q}”.</p>}
+          <Label right={<button className="btn link small" onClick={() => setAdding('next')}>Add</button>}>Up Next</Label>
+          {up.length ? <ShelfList books={up} /> : <p className="muted small pad">Nothing lined up. Pick a few from your queue.</p>}
+          {queued > 0 && (
+            <button className="queue-link" onClick={() => setTab('queue')}>
+              <span>{up.length < UP_NEXT_MAX ? `${UP_NEXT_MAX - up.length} open ${UP_NEXT_MAX - up.length === 1 ? 'spot' : 'spots'} · ` : ''}{queued} in your queue</span><span aria-hidden>›</span>
+            </button>
+          )}
         </section>
       )}
     </main>

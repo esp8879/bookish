@@ -22,7 +22,7 @@ Used almost entirely on a phone, often on the subway.
 - Every action works offline and is queued: add, start, finish, DNF, reorder, notes.
 - A quiet "not synced yet" marker comes from `hasPendingWrites`.
 - Installing to the Home Screen is the intended use, because iOS keeps storage for installed web apps much more reliably than for a Safari tab.
-- Acceptance test: in airplane mode, add a book, finish one, reorder the pile, and write a note. Reconnect and everything syncs.
+- Acceptance test: in airplane mode, add a book, finish one, reorder Up Next, and write a note. Reconnect and everything syncs.
 
 ## Data
 
@@ -31,22 +31,25 @@ Dates are calendar strings (`YYYY-MM-DD`, with `YYYY` allowed for imported 2025 
 - `libraries/{lid}/books/{id}`
   - `title` (stored in Title Case), `author`
   - `reads[]`: `{ id, status: 'reading' | 'finished' | 'dnf', started, ended, note }`
-  - `pile_rank`: number when the book is in Up Next, otherwise null. A book is "in the pile" if it has a rank and no read in progress.
+  - `shelf`: `'next'` (Up Next, at most 5) or `'queue'` (the long someday list), or null. `rank`: order within the shelf. A book being read is on no shelf.
   - `highlights[]`: `{ id, text, location?, added, source: 'clippings' | 'manual' }`. `id` is a hash of the normalized text, so re-imports are no-ops.
 
 ## Screens
 
-**Home**, three stacked sections:
+Tabs: **Books · Queue · Read · Settings**.
+
+**Books (home)**, two sections:
 1. **Reading:** every book with a read in progress, all equal (switching between two books is normal). Shows days in.
-2. **Up Next:** the pile, loosely ranked, drag to reorder. Quick add with just title and author; the author field suggests names already in the library.
-3. **Read:** history, newest first, grouped by year, with notes visible. Search covers titles, authors and notes.
+2. **Up Next:** at most 5 books, drag to reorder, with a link to the queue below. Quick add with just title and author; the author field suggests names already in the library.
+
+**Queue:** the long list of books to read someday, drag to reorder, searchable once it's long. Each row has an **Up Next** button. Promoting into a full Up Next sends Up Next's last book back to the top of the queue (with a toast saying so). New books default to the queue.
+
+**Read:** a year at a time (year picker). The year's numbers on top (books finished, set aside, books per month, pace), then that year's books, newest first, with notes. Search covers every year: titles, authors and notes.
 
 **Finish flow** (the main moment of use), from a Reading book:
-done or DNF → write the note → "What's next?" showing the top 5 of the pile plus "see all" → start one in a single tap.
+done or DNF → write the note → "What's next?" showing Up Next (or the top of the queue if Up Next is empty), with the queue a tap away → start one in a single tap.
 
-**Book page:** every read with its dates and note, plus that book's highlights (highlights are shown here only and are not searched). Buttons: **Read again** for finished books, **Try again** for DNF books. Both start a new read and keep the old ones.
-
-**Year:** year-end stats. Books finished, DNFs, books per month, average days per book, most-read authors.
+**Book page:** every read with its dates and note, plus that book's highlights (highlights are shown here only and are not searched). Buttons: **Read again** for finished books, **Try again** for DNF books. Both start a new read and keep the old ones. Shelf buttons move the book between Up Next and the queue, or off both.
 
 **Settings:** library link (copy), export (JSON complete, CSV, Markdown by year), import, delete library.
 
@@ -54,7 +57,7 @@ done or DNF → write the note → "What's next?" showing the top 5 of the pile 
 
 - **Spreadsheet** (`book tracker.xlsx`):
   - Sheet `2025` has title and author only. Import as finished with `ended: '2025'`. Identical rows collapse.
-  - Sheet `2026` has start, end and notes. A start with no end is in progress. Notes beginning "probably DNF" become `dnf`. Rows with no dates go to the pile.
+  - Sheet `2026` has start, end and notes. A start with no end is in progress. Notes beginning "probably DNF" become `dnf`. Rows with no dates go to Up Next, overflowing into the queue past 5.
   - Drop the manual `#` column. Convert titles to Title Case.
 - **Kindle `My Clippings.txt`:**
   - Parsed in the browser and matched to books by title and author; anything unmatched is shown for manual mapping.

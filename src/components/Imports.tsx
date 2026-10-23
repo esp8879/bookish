@@ -39,14 +39,15 @@ function SpreadsheetConfirm({ plan, onClose }: { plan: MergePlan; onClose: () =>
   const { applyMerge } = useStore();
   const { toast } = useUI();
   const reading = plan.creates.filter((b) => b.reads.some((r) => r.status === 'reading')).length;
-  const pile = plan.creates.filter((b) => b.pile_rank != null).length;
+  const next = plan.creates.filter((b) => b.shelf === 'next').length;
+  const queued = plan.creates.filter((b) => b.shelf === 'queue').length;
   const nothing = !plan.creates.length && !plan.updates.length;
   return (
     <Sheet title="Import spreadsheet" onClose={onClose}>
       {nothing ? <p>Everything in this file is already in your library.</p> : (
         <>
           <p><strong>{plan.creates.length}</strong> new {plan.creates.length === 1 ? 'book' : 'books'}{plan.updates.length > 0 && <>, <strong>{plan.updates.length}</strong> with new reads</>}.</p>
-          <p className="muted small">{reading} reading now, {pile} to Up Next, the rest in your history. Titles are set in Title Case.{plan.skipped > 0 && ` ${plan.skipped} rows were already here and are skipped.`}</p>
+          <p className="muted small">{reading} reading now, {next} to Up Next{queued > 0 && `, ${queued} to the queue`}, the rest in your history. Titles are set in Title Case.{plan.skipped > 0 && ` ${plan.skipped} rows were already here and are skipped.`}</p>
           <ul className="list compact">
             {plan.creates.slice(0, 6).map((b) => <li key={b.id}><div className="row-main static"><span className="title">{b.title}</span><span className="author">{b.author}</span></div></li>)}
           </ul>

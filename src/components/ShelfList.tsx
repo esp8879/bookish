@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent } from 'react';
+import { useRef, useState, type PointerEvent, type ReactNode } from 'react';
 import type { Book } from '../types';
 import { rankAt } from '../lib/books';
 import { useStore } from '../data/store';
@@ -6,8 +6,8 @@ import { useUI } from '../ui';
 
 interface Drag { id: string; from: number; to: number; startY: number; dy: number; tops: number[]; heights: number[] }
 
-/** Up Next, reordered by dragging the handle. Tapping a row opens the book. */
-export function PileList({ books }: { books: Book[] }) {
+/** A shelf (Up Next or the queue), reordered by dragging the handle. Tapping a row opens the book. */
+export function ShelfList({ books, action, sortable = true }: { books: Book[]; action?: (b: Book) => ReactNode; sortable?: boolean }) {
   const { update } = useStore();
   const { openBook } = useUI();
   const rows = useRef<(HTMLLIElement | null)[]>([]);
@@ -32,7 +32,7 @@ export function PileList({ books }: { books: Book[] }) {
     if (!drag) return;
     if (drag.to !== drag.from) {
       const rest = books.filter((b) => b.id !== drag.id);
-      update(drag.id, { pile_rank: rankAt(rest, drag.to) });
+      update(drag.id, { rank: rankAt(rest, drag.to) });
     }
     setDrag(null);
   };
@@ -46,7 +46,7 @@ export function PileList({ books }: { books: Book[] }) {
   };
 
   return (
-    <ol className={`list pile${drag ? ' dragging' : ''}`}>
+    <ol className={`list shelf${drag ? ' dragging' : ''}`}>
       {books.map((b, i) => (
         <li key={b.id} ref={(el) => { rows.current[i] = el; }}
           className={drag?.id === b.id ? 'lifted' : ''}
@@ -55,9 +55,10 @@ export function PileList({ books }: { books: Book[] }) {
             <span className="title">{b.title}</span>
             {b.author && <span className="author">{b.author}</span>}
           </button>
-          <span className="handle" aria-label={`Reorder ${b.title}`} onPointerDown={(e) => down(e, i)} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+          {action?.(b)}
+          {sortable && <span className="handle" aria-label={`Reorder ${b.title}`} onPointerDown={(e) => down(e, i)} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
             <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden><path d="M3 6h12M3 9h12M3 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
-          </span>
+          </span>}
         </li>
       ))}
     </ol>

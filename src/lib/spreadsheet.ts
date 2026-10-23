@@ -28,7 +28,7 @@ const text = (v: unknown) => (v == null ? '' : String(v).trim());
  * - start + end: finished
  * - start only: reading, or DNF when the note says so (the give-up day is unknown, so it uses the start)
  * - end only: finished
- * - no dates on a sheet that has date columns: Up Next
+ * - no dates on a sheet that has date columns: Up Next (overflowing into the queue)
  * - a sheet with no date columns (2025): finished, dated by the sheet's year
  * Duplicate rows (same book, same dates) collapse.
  */
@@ -60,11 +60,11 @@ export function sheetsToIncoming(sheets: Sheet[]): Incoming[] {
         ? { title, author, reads: [{ status: 'dnf', started, ended: started, note }] }
         : { title, author, reads: [{ status: 'reading', started, ended: null, note }] };
       else if (ended) inc = { title, author, reads: [{ status: 'finished', started: null, ended, note }] };
-      else if (hasDates) inc = { title, author, reads: [], pile: true };
+      else if (hasDates) inc = { title, author, reads: [], shelf: 'next' };
       else if (year) inc = { title, author, reads: [{ status: 'finished', started: null, ended: year as PartialDate, note }] };
       else continue;
       const r = inc.reads[0];
-      const dedupe = `${title.toLowerCase()}|${author.toLowerCase()}|${r?.status ?? 'pile'}|${r?.started ?? ''}|${r?.ended ?? ''}`;
+      const dedupe = `${title.toLowerCase()}|${author.toLowerCase()}|${r?.status ?? 'shelf'}|${r?.started ?? ''}|${r?.ended ?? ''}`;
       if (seen.has(dedupe)) continue;
       seen.add(dedupe);
       out.push(inc);

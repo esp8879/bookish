@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
-export type Tab = 'books' | 'year' | 'settings';
+import type { Shelf } from './types';
+
+export type Tab = 'books' | 'queue' | 'read' | 'settings';
 
 interface UI {
   tab: Tab;
@@ -8,8 +10,9 @@ interface UI {
   /** Book page overlay. */
   bookId: string | null;
   openBook: (id: string | null) => void;
-  adding: boolean;
-  setAdding: (v: boolean) => void;
+  /** Add sheet, and where it defaults to; false when closed. */
+  adding: Shelf | false;
+  setAdding: (v: Shelf | false) => void;
   /** Finish flow for one read. */
   finishing: { bookId: string; readId: string } | null;
   setFinishing: (f: { bookId: string; readId: string } | null) => void;
@@ -28,7 +31,7 @@ interface ToastState { msg: string; undo?: () => void; key: number }
 export function UIProvider({ children }: { children: ReactNode }) {
   const [tab, setTabState] = useState<Tab>('books');
   const [bookId, setBookId] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState<Shelf | false>(false);
   const [finishing, setFinishing] = useState<{ bookId: string; readId: string } | null>(null);
   const [toastState, setToastState] = useState<ToastState | null>(null);
   const timer = useRef<number | null>(null);

@@ -59,7 +59,11 @@ export function BookPage({ id }: { id: string }) {
   if (!book || book.deleted_at) return null;
   const now = currentRead(book);
   const last = book.reads[book.reads.length - 1];
-  const inPile = book.pile_rank != null && !now;
+  const shelf = now ? null : book.shelf;
+  const moveTo = (s: 'next' | 'queue') => {
+    const bumped = store.shelve(book.id, s, s === 'queue' ? 'top' : 'bottom');
+    toast(s === 'queue' ? 'Moved to the queue' : bumped ? `Up next. ${bumped.title} went back to the queue.` : 'Up next');
+  };
 
   const del = () => {
     store.remove(book.id);
@@ -109,11 +113,12 @@ export function BookPage({ id }: { id: string }) {
 
       <div className="book-actions">
         {now && <button className="btn primary" onClick={() => setFinishing({ bookId: book.id, readId: now.id })}>Finish</button>}
-        {!now && <button className={`btn${inPile ? ' primary' : ''}`} onClick={() => { store.startReading(book.id); toast(`Started ${book.title}`); }}>
-          {inPile || !last ? 'Start reading' : last.status === 'dnf' ? 'Try again' : 'Read again'}
+        {!now && <button className={`btn${shelf ? ' primary' : ''}`} onClick={() => { store.startReading(book.id); toast(`Started ${book.title}`); }}>
+          {shelf || !last ? 'Start reading' : last.status === 'dnf' ? 'Try again' : 'Read again'}
         </button>}
-        {!now && !inPile && <button className="btn" onClick={() => { store.toPile(book.id); toast('Added to Up Next'); }}>Add to Up Next</button>}
-        {inPile && <button className="btn" onClick={() => { store.update(book.id, { pile_rank: null }); toast('Removed from Up Next'); }}>Remove from Up Next</button>}
+        {!now && shelf !== 'next' && <button className="btn" onClick={() => moveTo('next')}>{shelf === 'queue' ? 'Move to Up Next' : 'Add to Up Next'}</button>}
+        {!now && shelf !== 'queue' && <button className="btn" onClick={() => moveTo('queue')}>{shelf === 'next' ? 'Back to queue' : 'Add to queue'}</button>}
+        {shelf && <button className="btn" onClick={() => { store.unshelve(book.id); toast(shelf === 'next' ? 'Removed from Up Next' : 'Removed from the queue'); }}>Remove</button>}
       </div>
 
       {book.reads.length > 0 && (

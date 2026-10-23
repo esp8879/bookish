@@ -1,5 +1,5 @@
 import type { Book } from '../types';
-import { history, pile, readingNow } from './books';
+import { history, normalizeBook, queue, readingNow, upNext } from './books';
 import { fmtRange, yearOf } from './dates';
 
 export const EXPORT_FORMAT = 'books-export';
@@ -14,7 +14,7 @@ export function fromJSON(raw: string): Book[] | null {
     const data = JSON.parse(raw);
     if (data?.format !== EXPORT_FORMAT || !Array.isArray(data.books)) return null;
     return (data.books as Book[]).filter((b) => b && typeof b.id === 'string' && typeof b.title === 'string' && Array.isArray(b.reads))
-      .map((b) => ({ ...b, highlights: b.highlights ?? [] }));
+      .map(normalizeBook);
   } catch { return null; }
 }
 
@@ -23,18 +23,19 @@ const csvCell = (v: string | number | null | undefined) => {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-/** One row per read, plus one row per Up Next book. Opens in any spreadsheet. */
+/** One row per read, plus one row per Up Next and queued book. Opens in any spreadsheet. */
 export function toCSV(books: Book[]): string {
   const rows: (string | number | null)[][] = [['title', 'author', 'status', 'started', 'ended', 'note', 'highlights']];
   const live = books.filter((b) => !b.deleted_at);
   for (const b of live) for (const r of b.reads) {
     rows.push([b.title, b.author, r.status, r.started, r.ended, r.note, b.highlights.length || '']);
   }
-  pile(live).forEach((b) => rows.push([b.title, b.author, 'up next', null, null, '', b.highlights.length || '']));
+  upNext(live).forEach((b) => rows.push([b.title, b.author, 'up next', null, null, '', b.highlights.length || '']));
+  queue(live).forEach((b) => rows.push([b.title, b.author, 'queue', null, null, '', b.highlights.length || '']));
   return rows.map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
 }
 
-/** A readable archive: Reading, Up Next, then every year newest first, with notes and highlights. */
+/** A readable archive: Reading, Up Next, Queue, then every year newest first, with notes and highlights. */
 export function toMarkdown(books: Book[]): string {
   const live = books.filter((b) => !b.deleted_at);
   const out: string[] = ['# Books', ''];
@@ -44,10 +45,10 @@ export function toMarkdown(books: Book[]): string {
     for (const { book, read } of reading) out.push(`- **${book.title}** — ${book.author} (${fmtRange(read.started, null)})`);
     out.push('');
   }
-  const up = pile(live);
-  if (up.length) {
-    out.push('## Up Next', '');
-    for (const b of up) out.push(`- **${b.title}** — ${b.author}`);
+  for (const [name, list] of [['Up Next', upNext(live)], ['Queue', queue(live)]] as const) {
+    if (!list.length) continue;
+    out.push(`## ${name}`, '');
+    for (const b of list) out.push(`- **${b.title}** — ${b.author}`);
     out.push('');
   }
   const items = history(live);

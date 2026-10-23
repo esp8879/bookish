@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useStore } from '../data/store';
 import { useUI } from '../ui';
-import { pile } from '../lib/books';
+import { queue, upNext } from '../lib/books';
 import { today } from '../lib/dates';
 import { DateField, Field, Grow, Seg, Sheet } from './common';
 
-/** Finish → done or DNF → note → "What's next?" from the top of the pile. */
+/** Finish → done or DNF → note → "What's next?" from Up Next, with the queue a tap away. */
 export function FinishFlow({ bookId, readId }: { bookId: string; readId: string }) {
   const { byId, books, endRead, startReading } = useStore();
   const { setFinishing, toast } = useUI();
@@ -19,10 +19,11 @@ export function FinishFlow({ bookId, readId }: { bookId: string; readId: string 
   const close = () => setFinishing(null);
   if (!book || !read) return null;
 
-  const up = pile(books);
+  const up = upNext(books);
+  const queued = queue(books);
   const save = () => {
     endRead(book.id, read.id, { status, ended: ended || today(), note: note.trim() });
-    if (up.length) setStep('next');
+    if (up.length || queued.length) setStep('next');
     else { close(); toast(status === 'finished' ? `Finished ${book.title}` : `Set ${book.title} aside`); }
   };
   const start = (id: string) => {
@@ -32,7 +33,7 @@ export function FinishFlow({ bookId, readId }: { bookId: string; readId: string 
   };
 
   if (step === 'next') {
-    const list = all ? up : up.slice(0, 5);
+    const list = all ? [...up, ...queued] : up.length ? up : queued.slice(0, 5);
     return (
       <Sheet title="What's next?" onClose={close}>
         <ul className="list next-list">
@@ -43,7 +44,8 @@ export function FinishFlow({ bookId, readId }: { bookId: string; readId: string 
             </li>
           ))}
         </ul>
-        {!all && up.length > 5 && <button className="btn link" onClick={() => setAll(true)}>See all {up.length}</button>}
+        {!all && queued.length > 0 && up.length > 0 && <button className="btn link" onClick={() => setAll(true)}>Show the queue too ({queued.length})</button>}
+        {!all && !up.length && queued.length > 5 && <button className="btn link" onClick={() => setAll(true)}>See all {queued.length}</button>}
         <button className="btn block" onClick={close}>Not now</button>
       </Sheet>
     );

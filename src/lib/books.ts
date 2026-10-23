@@ -1,7 +1,17 @@
-import type { Book, Read } from '../types';
+import type { Book, Read, Shelf } from '../types';
 import { daysBetween, isFullDate, today, yearOf } from './dates';
 
 export const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36));
+
+/** Fill defaults for documents written by older builds (Up Next used to be `pile_rank`). */
+export function normalizeBook(raw: Partial<Book> & { id: string; pile_rank?: number | null }): Book {
+  const { pile_rank, ...b } = raw;
+  return {
+    title: '', author: '', created_at: 0, updated_at: 0, deleted_at: null, ...b,
+    reads: b.reads ?? [], highlights: b.highlights ?? [],
+    shelf: b.shelf ?? (pile_rank != null ? 'next' : null), rank: b.rank ?? pile_rank ?? null,
+  };
+}
 
 export const currentRead = (b: Book): Read | undefined => b.reads.find((r) => r.status === 'reading');
 export const lastRead = (b: Book): Read | undefined => b.reads[b.reads.length - 1];
@@ -16,10 +26,14 @@ export function readingNow(books: Book[]): ReadingItem[] {
   return out.sort((a, b) => (b.read.started ?? '').localeCompare(a.read.started ?? '') || b.book.created_at - a.book.created_at);
 }
 
-/** Up Next, in rank order. A book being read is never in the pile. */
-export function pile(books: Book[]): Book[] {
-  return books.filter((b) => b.pile_rank != null && !currentRead(b)).sort((a, b) => a.pile_rank! - b.pile_rank!);
+export const UP_NEXT_MAX = 5;
+
+/** A shelf in rank order. A book being read is never on a shelf. */
+export function onShelf(books: Book[], shelf: Shelf): Book[] {
+  return books.filter((b) => b.shelf === shelf && !currentRead(b)).sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
 }
+export const upNext = (books: Book[]) => onShelf(books, 'next');
+export const queue = (books: Book[]) => onShelf(books, 'queue');
 
 /** Every finished or abandoned read, newest first. Year-only dates sort after dated reads of the same year. */
 export function history(books: Book[]): HistoryItem[] {
@@ -30,15 +44,32 @@ export function history(books: Book[]): HistoryItem[] {
 
 /** Rank that puts an item at `index` of `list` (which excludes the moving item). */
 export function rankAt(list: Book[], index: number): number {
-  const before = list[index - 1]?.pile_rank;
-  const after = list[index]?.pile_rank;
+  const before = list[index - 1]?.rank;
+  const after = list[index]?.rank;
   if (before == null && after == null) return 1;
   if (before == null) return after! - 1;
   if (after == null) return before + 1;
   return (before + after) / 2;
 }
 
-export const bottomRank = (books: Book[]) => Math.max(0, ...books.map((b) => b.pile_rank ?? 0)) + 1;
+export const bottomRank = (list: Book[]) => (list.length ? Math.max(...list.map((b) => b.rank ?? 0)) + 1 : 1);
+export const topRank = (list: Book[]) => (list.length ? Math.min(...list.map((b) => b.rank ?? 0)) - 1 : 1);
+
+export interface ShelfMove { id: string; shelf: Shelf | null; rank: number | null }
+
+/**
+ * Put a book on a shelf, at its top or bottom. Up Next holds UP_NEXT_MAX books: when it's full,
+ * its last book goes back to the top of the queue to make room.
+ */
+export function planShelve(books: Book[], id: string, shelf: Shelf, at: 'top' | 'bottom'): ShelfMove[] {
+  const list = onShelf(books, shelf).filter((b) => b.id !== id);
+  const moves: ShelfMove[] = [{ id, shelf, rank: at === 'top' ? topRank(list) : bottomRank(list) }];
+  if (shelf === 'next' && list.length >= UP_NEXT_MAX) {
+    const bumped = list[list.length - 1];
+    moves.push({ id: bumped.id, shelf: 'queue', rank: topRank(queue(books).filter((b) => b.id !== id)) });
+  }
+  return moves;
+}
 
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 export const bookKey = (title: string, author: string) => `${norm(title)}|${norm(author)}`;
@@ -64,7 +95,6 @@ export interface YearStats {
   medianDays: number | null;
   quickest: { item: HistoryItem; days: number } | null;
   longest: { item: HistoryItem; days: number } | null;
-  topAuthors: { author: string; count: number }[];
 }
 
 export function years(books: Book[]): number[] {
@@ -88,12 +118,8 @@ export function yearStats(books: Book[], year: number): YearStats {
   }
   spans.sort((a, b) => a.days - b.days);
   const medianDays = spans.length ? spans[Math.floor((spans.length - 1) / 2)].days : null;
-  const counts = new Map<string, number>();
-  for (const i of finished) counts.set(i.book.author, (counts.get(i.book.author) ?? 0) + 1);
-  const topAuthors = [...counts].filter(([a, c]) => a && c > 1).map(([author, count]) => ({ author, count })).sort((a, b) => b.count - a.count).slice(0, 5);
   return {
     year, finished, dnf, perMonth, undatedFinished, medianDays,
     quickest: spans[0] ?? null, longest: spans.length > 1 ? spans[spans.length - 1] : null,
-    topAuthors,
   };
 }

@@ -4,13 +4,14 @@ import { StoreProvider } from './data/store';
 import { createLibrary, openLibrary, resolveLid } from './library';
 import { UIProvider, useUI, type Tab } from './ui';
 import { Home } from './screens/Home';
-import { Year } from './screens/Year';
+import { Read } from './screens/Read';
+import { Queue } from './screens/Queue';
 import { Settings } from './screens/Settings';
 import { BookPage } from './components/BookPage';
 import { AddBook } from './components/AddBook';
 import { FinishFlow } from './components/FinishFlow';
 
-const TABS: { id: Tab; label: string }[] = [{ id: 'books', label: 'Books' }, { id: 'year', label: 'Year' }, { id: 'settings', label: 'Settings' }];
+const TABS: { id: Tab; label: string }[] = [{ id: 'books', label: 'Books' }, { id: 'queue', label: 'Queue' }, { id: 'read', label: 'Read' }, { id: 'settings', label: 'Settings' }];
 
 function UpdatePrompt() {
   const [ready, setReady] = useState(updateReady);
@@ -32,13 +33,14 @@ function Shell() {
   return (
     <div className="app">
       {tab === 'books' && <Home />}
-      {tab === 'year' && <Year />}
+      {tab === 'queue' && <Queue />}
+      {tab === 'read' && <Read />}
       {tab === 'settings' && <Settings />}
       {bookId && <BookPage key={bookId} id={bookId} />}
       <nav className="tabbar"><div>
         {TABS.map((t) => <button key={t.id} className={tab === t.id && !bookId ? 'on' : ''} onClick={() => setTab(t.id)}>{t.label}</button>)}
       </div></nav>
-      {adding && <AddBook />}
+      {adding && <AddBook shelf={adding} />}
       {finishing && <FinishFlow bookId={finishing.bookId} readId={finishing.readId} />}
       <UpdatePrompt />
     </div>

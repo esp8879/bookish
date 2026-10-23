@@ -10,7 +10,7 @@ Personal reading log, mobile-first PWA replacing `book tracker.xlsx`. Spec: `boo
 No accounts. The library id in the URL path (`/l/<24+ char token>`) is the secret, cached in localStorage (`books.lid`, `src/library.ts`). `scripts/postbuild.mjs` strips `start_url` from the manifest so iOS Add to Home Screen keeps the path. `firestore.rules` only allows `libraries/{lid}/**` for well-formed ids.
 
 ## Data
-- One collection, `libraries/{lid}/books/{id}`: title (Title Case), author, `reads[]` (status reading|finished|dnf, started/ended as `YYYY-MM-DD` or `YYYY`, one note), `pile_rank` (Up Next order, fractional), `highlights[]`, soft delete via `deleted_at`. Types in `src/types.ts`.
+- One collection, `libraries/{lid}/books/{id}`: title (Title Case), author, `reads[]` (status reading|finished|dnf, started/ended as `YYYY-MM-DD` or `YYYY`, one note), `shelf` (`next` = Up Next, max 5, on Home; `queue` = the long someday list) + `rank` (fractional order within the shelf; `planShelve` in `src/lib/books.ts` handles the cap by bumping Up Next's last book to the top of the queue; `normalizeBook` maps the old `pile_rank` field to Up Next), `highlights[]`, soft delete via `deleted_at`. Types in `src/types.ts`.
 - Dates are plain calendar strings; no timezone logic anywhere (`src/lib/dates.ts`).
 - The whole library is one listener; the Firestore persistent cache makes every screen and write work offline. Writes are fire-and-forget (not awaited). `hasPendingWrites` drives the "Not synced yet" mark.
 - Pure logic lives in `src/lib/` and is tested in `src/lib/__tests__/` (title case, dates, derived lists, year stats, spreadsheet + clippings import, merge idempotency, export).
