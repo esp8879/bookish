@@ -3,7 +3,7 @@ import { useStore } from '../data/store';
 import { useUI, type Tab } from '../ui';
 import { queue, readingNow, UP_NEXT, yearStats } from '../lib/books';
 import { fmtShortDay, today } from '../lib/dates';
-import { Label } from '../components/common';
+import { Label, Wordmark } from '../components/common';
 import { QueueList } from '../components/QueueList';
 import { ReadingRow } from '../components/ReadingRow';
 import { SyncMark } from '../components/SyncMark';
@@ -22,9 +22,9 @@ export function Home() {
 
   return (
     <main className="screen home">
-      <header className="ledger">
-        <span>{fmtShortDay(day)} · {finished} {finished === 1 ? 'book' : 'books'} this year</span>
-        <SyncMark />
+      <header className="home-head">
+        <div className="home-top"><Wordmark size="mini" /><SyncMark /></div>
+        <div className="ledger">{fmtShortDay(day)} · {finished} {finished === 1 ? 'book' : 'books'} this year</div>
       </header>
 
       {empty && (

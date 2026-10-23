@@ -55,6 +55,9 @@ em { font-style: italic; }
 .screen-sub { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .wordmark { font-family: var(--serif); font-weight: 600; font-size: 34px; letter-spacing: -0.01em; line-height: 1.1; }
 .wordmark.big { font-size: 52px; }
+.wordmark.small { font-size: 20px; }
+.wordmark.mini { font-size: 19px; letter-spacing: 0; line-height: 1; }
+.wm-dot { color: var(--green); padding: 0 .02em; }
 
 /* Main screen on a phone: pinned to the viewport, never scrolled by the page (it scrolls itself only if it ever
    overflows), sized to fit an iPhone 17 Pro with two books reading and five up next. */
@@ -81,16 +84,18 @@ em { font-style: italic; }
 .drawers button { min-height: var(--drawers-h); padding: 0 18px; font-size: 15px; font-weight: 600; font-variant: all-small-caps; letter-spacing: .12em; color: var(--muted); }
 .drawers button:active { color: var(--ink); }
 
-.sync { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; font-size: 13px; color: var(--muted); font-variant: all-small-caps; letter-spacing: .08em; white-space: nowrap; }
+/* Sentence case at regular weight, so the status reads apart from the small-caps ledger line beneath it. */
+.sync { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; font-size: 13px; font-weight: 400; color: var(--muted); letter-spacing: 0; white-space: nowrap; }
 .sync i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
 .sync.busy i { background: transparent; border: 1.5px solid var(--green); }
 .sync.wait { color: var(--ink); }
 .sync.wait i { background: var(--red); }
 
-/* The ledger line: the day and the year's count, like the head of a diary page. */
-.ledger { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 0; font-size: 13px; font-weight: 600; font-variant: all-small-caps; letter-spacing: .09em; color: var(--muted); white-space: nowrap; }
-/* The date side gives way first: it trims with an ellipsis rather than ever running into the sync state. */
-.ledger > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Main screen head: the mini book·ish and the sync state on one line, the ledger (day and the year's count) beneath,
+   like the head of a diary page. */
+.home-head { display: flex; flex-direction: column; gap: 6px; }
+.home-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.ledger { font-size: 13px; font-weight: 600; font-variant: all-small-caps; letter-spacing: .09em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Card-catalog drawer label: small caps, a hairline to the edge. */
 .label { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; min-height: 32px; }
@@ -295,14 +300,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
 /* --- wide screens (Mac, iPad) --------------------------------------------- */
 @media (min-width: 700px) {
   .screen, .page { padding-top: 48px; }
-  /* The main screen flows like any page. Its drawers row moves to the top right, desktop-style, so navigation lives
-     along the top edge on every screen (the drawer screens have "‹ Now" top left). */
-  .screen.home { position: static; overflow: visible; padding-top: 28px; padding-bottom: 64px; }
-  .drawers { order: -1; margin: 0 -18px -12px auto; justify-content: flex-end; gap: 4px; }
-  .drawers button { min-height: 40px; }
-  /* The main screen's row follows the content here, so the drawer screens don't need the band either. */
-  .bottom-band { display: none; }
-  .screen.drawer { padding-bottom: 64px; }
+  /* Layout and spacing stay exactly as on a phone (drawers row pinned at the bottom, the same band on drawer screens);
+     only the top padding opens up a little. */
+  .screen.home { padding-top: 40px; }
   /* Sheets become centred dialogs rather than bottom sheets. */
   .sheet { top: 12vh; bottom: auto; max-height: 76vh; border: 1px solid var(--rule); border-radius: 14px; padding-bottom: 24px; box-shadow: 0 24px 60px rgba(29, 25, 21, .22); }
 }

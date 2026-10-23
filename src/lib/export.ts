@@ -37,7 +37,7 @@ export function toCSV(books: Book[]): string {
 /** A readable archive: Reading, Up Next, Queue, then every year newest first, with notes and highlights. */
 export function toMarkdown(books: Book[]): string {
   const live = books.filter((b) => !b.deleted_at);
-  const out: string[] = ['# Books', ''];
+  const out: string[] = ['# book·ish', ''];
   const reading = readingNow(live);
   if (reading.length) {
     out.push('## Reading', '');

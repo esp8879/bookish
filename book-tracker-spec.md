@@ -1,4 +1,4 @@
-# Book tracker — spec
+# book·ish — spec
 
 A personal reading log as a mobile-first PWA, replacing `book tracker.xlsx`. Purely for tracking: it is for one reader, and the data belongs to that reader.
 

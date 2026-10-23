@@ -11,8 +11,8 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['icon.svg', 'apple-touch-icon.png', 'fonts/*.woff2'],
       manifest: {
-        name: 'Books',
-        short_name: 'Books',
+        name: 'book·ish',
+        short_name: 'book·ish',
         description: 'A personal reading log',
         scope: '/',
         id: '/',

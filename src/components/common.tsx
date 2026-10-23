@@ -69,6 +69,11 @@ export function ScreenHeader({ back, action, children }: { back: { label: string
   );
 }
 
+/** The name, set like a dictionary headword: book·ish, the syllable dot in library green. On the main screen only as the mini mark. */
+export function Wordmark({ size }: { size?: 'big' | 'small' | 'mini' }) {
+  return <span className={`wordmark${size ? ` ${size}` : ''}`} aria-label="bookish">book<span className="wm-dot" aria-hidden>·</span>ish</span>;
+}
+
 /** Magnifier for search buttons. */
 export const SearchIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M12.6 12.6L17 17" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>

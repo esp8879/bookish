@@ -5,7 +5,7 @@ import { libraryUrl } from '../library';
 import { toCSV, toJSON, toMarkdown } from '../lib/export';
 import { pickFile, saveFile } from '../lib/files';
 import { today } from '../lib/dates';
-import { Label, ScreenHeader } from '../components/common';
+import { Label, ScreenHeader, Wordmark } from '../components/common';
 import { ImportConfirm, readImport, type ImportKind, type ImportState } from '../components/Imports';
 
 const ACCEPT: Record<ImportKind, string> = {
@@ -40,7 +40,7 @@ export function Settings() {
     } finally { setBusy(null); }
   };
   const exp = async (fmt: 'json' | 'csv' | 'md') => {
-    const name = `books-${today()}.${fmt}`;
+    const name = `bookish-${today()}.${fmt}`;
     const content = fmt === 'json' ? toJSON(store.books) : fmt === 'csv' ? toCSV(store.books) : toMarkdown(store.books);
     const type = fmt === 'json' ? 'application/json' : fmt === 'csv' ? 'text/csv' : 'text/markdown';
     const r = await saveFile(name, content, type);
@@ -81,6 +81,7 @@ export function Settings() {
 
       <section>
         <Label>About</Label>
+        <Wordmark size="small" />
         <p className="muted small">{store.books.length} books · {store.online ? (store.pending ? 'syncing' : 'synced') : 'offline'} · build {__BUILD__}</p>
       </section>
 

@@ -10,6 +10,7 @@ import { Settings } from './screens/Settings';
 import { BookPage } from './components/BookPage';
 import { AddBook } from './components/AddBook';
 import { FinishFlow } from './components/FinishFlow';
+import { Wordmark } from './components/common';
 
 /** Paper band at the bottom of the drawer screens; its fade turns on only while content is scrolled under it. */
 function BottomBand({ tab }: { tab: string }) {
@@ -35,7 +36,7 @@ function UpdatePrompt() {
     <div className="update-scrim" role="dialog" aria-label="Update available">
       <div className="update-card">
         <h2>A new version is ready</h2>
-        <p className="muted">Update to get the latest version of Books.</p>
+        <p className="muted">Update to get the latest version of book·ish.</p>
         <button className="btn primary block" disabled={updating} onClick={() => { setUpdating(true); void applyUpdate(); }}>{updating ? 'Updating…' : 'Update now'}</button>
       </div>
     </div>
@@ -66,7 +67,7 @@ function Welcome({ onCreate }: { onCreate: () => void }) {
   const [bad, setBad] = useState(false);
   return (
     <main className="welcome">
-      <h1 className="wordmark big">Books</h1>
+      <h1><Wordmark size="big" /></h1>
       <p className="lede">A reading log that belongs to you. What you read, what you thought, what's next.</p>
       <p className="muted small">No account. Your library lives at a private link; keep it safe and it opens on any device.</p>
       <div className="stack">

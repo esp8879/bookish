@@ -26,7 +26,7 @@ export async function readImport(kind: ImportKind, file: File, books: Book[]): P
     return { kind, groups: groupClippings(books, clips) };
   }
   const restored = fromJSON(text);
-  if (!restored) return "That isn't a Books export file.";
+  if (!restored) return "That isn't a book·ish export file.";
   return { kind, books: restored };
 }
 
