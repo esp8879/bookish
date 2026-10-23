@@ -7,8 +7,8 @@ A personal reading log as a mobile-first PWA, replacing `book tracker.xlsx`. Pur
 ## Architecture (same principles as bébé tracker)
 
 - React + Vite + TypeScript, plain CSS, `vite-plugin-pwa`.
-- Its own Firebase project on the Spark plan (no billing): Firestore + Hosting only. No Cloud Functions, no Firebase Auth. Starts on the default `*.web.app` URL.
-  - Project `book-tracker-9q4lo4` (created 2026-10-22), Firestore `(default)` in `nam5`, web app id `1:957304127050:web:565703fa3eac02b5b8b0b3`. Web config: `firebase apps:sdkconfig web 1:957304127050:web:565703fa3eac02b5b8b0b3 --project book-tracker-9q4lo4`. Live URL will be https://book-tracker-9q4lo4.web.app
+- One Firebase project on the Spark plan (no billing): Firestore + Hosting only. No Cloud Functions, no Firebase Auth.
+  - Project `readingis-cool-3n1j`, Firestore `(default)` in `nam5`, served at https://readingis.cool. Everyone's libraries, including the owner's, live here.
 - **Identity:** no accounts. The library id in the URL path (`/l/<24+ char random token>`) is the secret. It is cached in localStorage on each device. The manifest has no `start_url` (stripped in a postbuild script) so iOS Add to Home Screen keeps the path. `firestore.rules` only allows `libraries/{lid}/**` for well-formed ids.
 - **Updates:** `registerType: 'prompt'`. Check for a new service worker hourly and on `visibilitychange` → visible, then show an "Update now" prompt.
 - `sw.js` and `manifest.webmanifest` are served `no-cache`. A public release-notes page is updated after every user-visible change.

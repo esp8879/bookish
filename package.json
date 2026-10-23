@@ -6,11 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node scripts/postbuild.mjs",
-    "build:public": "tsc --noEmit && vite build --mode public && node scripts/postbuild.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "deploy": "npm run build && firebase deploy --only hosting,firestore",
-    "deploy:public": "npm run build:public && firebase deploy --only hosting,firestore --project public"
+    "deploy": "npm run build && firebase deploy --only hosting,firestore"
   },
   "dependencies": {
     "firebase": "^12.19.0",

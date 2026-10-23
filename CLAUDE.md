@@ -4,11 +4,8 @@
 
 ## Stack
 - React 19 + Vite + TypeScript, plain CSS (`src/styles.css`), `vite-plugin-pwa`. Same architecture as `../bebe`.
-- Two deployments of one codebase, each its own Firebase project (Spark, no billing; Firestore `nam5` + Hosting only; no Cloud Functions, no Auth):
-  - private, the owner's library: `book-tracker-9q4lo4` (https://book-tracker-9q4lo4.web.app), `npm run deploy`
-  - public, for anyone: `readingis-cool-3n1j` at https://readingis.cool (custom domain, DNS at Porkbun), `npm run deploy:public` (builds with `--mode public`, `.firebaserc` alias `public`)
-  - `src/firebase.ts` picks the config from `import.meta.env.MODE`, so each bundle contains only its own project. Deploy both after a user-visible change.
-  - A brand-new project's Firestore rules may need a second `firebase deploy --only firestore:rules --force` right after the database is created before they take effect.
+- Firebase project `readingis-cool-3n1j` (Spark, no billing; Firestore `nam5` + Hosting only; no Cloud Functions, no Auth), served at https://readingis.cool (custom domain, DNS at Porkbun). `npm run deploy`. The owner's own library lives here too; the earlier private project (`book-tracker-9q4lo4`) was retired on 2026-10-23.
+- A brand-new project's Firestore rules may need a second `firebase deploy --only firestore:rules --force` right after the database is created before they take effect.
 
 ## Identity
 No accounts. The library id in the URL path (`/l/<24+ char token>`) is the secret, cached in localStorage (`books.lid`, `src/library.ts`). `scripts/postbuild.mjs` strips `start_url` from the manifest so iOS Add to Home Screen keeps the path. `firestore.rules` only allows `libraries/{lid}/**` for well-formed ids.

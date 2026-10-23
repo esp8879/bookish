@@ -42,7 +42,7 @@ npm run dev
 to put it online:
 
 1. create a firebase project, add a web app, and create a firestore database
-2. put your project's web config in `src/firebase.ts` (the second, private branch) and your project id as `default` in `.firebaserc`
+2. put your project's web config in `src/firebase.ts` and your project id in `.firebaserc`
 3. `npm run deploy`
 
 `npm test` runs the tests for the parts that matter (imports, dates, the queue, stats).
