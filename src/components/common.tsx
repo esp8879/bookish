@@ -14,7 +14,8 @@ export function useBodyLock() {
 /**
  * Bottom sheet. On iOS the keyboard covers the bottom of the layout viewport, so the sheet follows
  * the visual viewport: it sits on top of the keyboard and never grows taller than what's visible.
- * With `action` (e.g. Save), the header becomes a Cancel / action bar that stays pinned while the body scrolls.
+ * With `action` (e.g. Save), the header becomes a Cancel / action bar that stays pinned while the body scrolls,
+ * and on a phone the sheet is anchored to the top (see `.sheet.form`), so its fields never wait on the keyboard.
  * `closeButton={false}` drops the header's Close when the sheet ends in its own way out (Escape and the backdrop still close it).
  * `lead` comes before the title (the finish stamp); `showTitle={false}` keeps the title for screen readers only.
  */
@@ -33,6 +34,7 @@ export function Sheet({ title, onClose, children, action, closeButton = true, le
       const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
       el.style.setProperty('--kb', `${kb}px`);
       el.style.setProperty('--vvh', `${vv.height}px`);
+      el.style.setProperty('--vvtop', `${vv.offsetTop}px`);
       el.classList.toggle('kb', kb > 40);
     };
     fit();
@@ -44,7 +46,7 @@ export function Sheet({ title, onClose, children, action, closeButton = true, le
   return (
     <>
       <div className="sheet-backdrop" onClick={onClose} />
-      <div className="sheet" role="dialog" aria-label={title} ref={ref}>
+      <div className={`sheet${action ? ' form' : ''}`} role="dialog" aria-label={title} ref={ref}>
         {action ? (
           <div className="sheet-bar"><button className="btn link" onClick={onClose}>Cancel</button>{action}</div>
         ) : null}

@@ -203,6 +203,12 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 
 .sheet-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(29, 25, 21, .32); animation: fade .15s; }
 .sheet { position: fixed; left: 0; right: 0; bottom: var(--kb, 0px); z-index: 41; max-width: 600px; margin: 0 auto; max-height: min(92vh, calc(var(--vvh, 100vh) - 12px)); overflow-y: auto; background: var(--paper); border-top: 1px solid var(--rule); border-radius: 14px 14px 0 0; padding: 18px 20px calc(24px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 16px; box-shadow: 0 -12px 40px rgba(29, 25, 21, .16); animation: up .2s ease-out; }
 .sheet.kb { padding-bottom: 16px; border-radius: 14px 14px 0 0; }
+/* Form sheets (Cancel / Save) on a phone: a page sheet hung from the top of the visible screen to its bottom. iOS reports the
+   keyboard's height only after it has slid in, so a sheet resting on the keyboard sat under it, then jumped; anchored at the
+   top, the fields stay put and only the empty bottom of the sheet moves. */
+@media (max-width: 699px) {
+  .sheet.form { top: calc(var(--vvtop, 0px) + 10px); max-height: none; }
+}
 .sheet-bar { position: sticky; top: -18px; z-index: 2; margin: -18px -20px -6px; padding: 12px 20px 10px; background: var(--paper); border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
 .sheet-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .sheet-head h2 { font-family: var(--serif); font-size: 21px; font-weight: 600; line-height: 1.25; }
