@@ -47,7 +47,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const toast = useCallback((msg: string, undo?: () => void) => {
     if (timer.current) window.clearTimeout(timer.current);
     setToastState({ msg, undo, key: Date.now() });
-    timer.current = window.setTimeout(() => setToastState(null), undo ? 8000 : 3500);
+    timer.current = window.setTimeout(() => setToastState(null), undo ? 5000 : 3500);
   }, []);
   useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); }, []);
 
