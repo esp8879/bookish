@@ -108,3 +108,56 @@ export function yearStats(books: Book[], year: number): YearStats {
     quickest: spans[0] ?? null, longest: spans.length > 1 ? spans[spans.length - 1] : null,
   };
 }
+
+// --- Finishing ---------------------------------------------------------------
+
+const ORDINAL_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'];
+/** "third" up to ten, then "11th". */
+const ordinalWord = (n: number) => ORDINAL_WORDS[n - 1] ?? ordinal(n);
+export const ordinal = (n: number) => {
+  const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';
+  return `${n}${s}`;
+};
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+
+/**
+ * The one line under the stamp when a book is finished: the most unusual thing that is true of this finish,
+ * from the library alone (no prompts, no judgement). `books` already include the finished read.
+ */
+export function finishFact(books: Book[], bookId: string, readId: string, now = today()): string {
+  const book = books.find((b) => b.id === bookId);
+  const i = book?.reads.findIndex((r) => r.id === readId) ?? -1;
+  const read = book?.reads[i];
+  const year = yearOf(read?.ended);
+  if (!book || !read || !year) return '';
+  const span = year === yearOf(now) ? 'this year' : `of ${year}`;
+
+  const earlier = book.reads.slice(0, i);
+  const finishedBefore = earlier.filter((r) => r.status === 'finished').length;
+  if (finishedBefore) return `${cap(ordinalWord(finishedBefore + 1))} time through`;
+  const setAside = earlier.filter((r) => r.status === 'dnf').length;
+  if (setAside) return `Finished on the ${ordinalWord(setAside + 1)} try`;
+
+  const { finished } = yearStats(books, year);
+  const count = finished.length;
+  if (count === 1) return `First book of ${year}`;
+  if (count % 10 === 0) return `Your ${ordinal(count)} book ${span}`;
+
+  // Quickest or longest, once there are enough dated reads for it to mean something, and only when it's the only one.
+  const days = (r: Read) => (isFullDate(r.started) && isFullDate(r.ended) ? Math.max(1, daysBetween(r.started, r.ended)) : null);
+  const mine = days(read);
+  const others = finished.filter((f) => f.read.id !== readId).map((f) => days(f.read)).filter((d): d is number => d != null);
+  if (mine != null && others.length >= 2) {
+    const n = `${mine} ${mine === 1 ? 'day' : 'days'}`;
+    if (others.every((d) => mine < d)) return `Your quickest read ${span}: ${n}`;
+    if (others.every((d) => mine > d)) return `Your longest read ${span}: ${n}`;
+  }
+
+  const author = norm(book.author);
+  if (author) {
+    const byAuthor = books.filter((b) => !b.deleted_at && norm(b.author) === author && b.reads.some((r) => r.status === 'finished')).length;
+    if (byAuthor > 1) return `Your ${ordinalWord(byAuthor)} by ${book.author}`;
+  }
+
+  return `Your ${ordinal(count)} book ${span}`;
+}

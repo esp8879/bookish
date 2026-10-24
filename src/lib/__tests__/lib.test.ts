@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Book, Read } from '../../types';
 import { titleCase, nameCase } from '../titlecase';
 import { daysBetween, fmtDate, fmtRange, fmtShortDay } from '../dates';
-import { history, normalizeBook, queue, rankAt, readingNow, upNext, yearStats } from '../books';
+import { finishFact, history, normalizeBook, queue, rankAt, readingNow, upNext, yearStats } from '../books';
 import { sheetsToIncoming, cellDate } from '../spreadsheet';
 import { planMerge } from '../importer';
 import { parseClippings, matchBook, newHighlights, groupClippings } from '../clippings';
@@ -200,5 +200,47 @@ describe('demo library', () => {
     const hls = lib.flatMap((b) => b.highlights);
     expect(hls.length).toBeGreaterThan(10);
     expect(new Set(hls.map((h) => h.id)).size).toBe(hls.length);
+  });
+});
+
+describe('finishFact', () => {
+  const NOW = '2026-10-24';
+  const done = (started: string | null, ended: string) => read({ status: 'finished', started, ended });
+  const fact = (books: Book[], b: Book) => finishFact(books, b.id, b.reads[b.reads.length - 1].id, NOW);
+
+  it('counts the year', () => {
+    const others = [book({ author: 'X', reads: [done(null, '2026-01-05')] }), book({ author: 'Y', reads: [done(null, '2026-02-05')] })];
+    const b = book({ author: 'Z', reads: [done(null, '2026-10-24')] });
+    expect(fact([...others, b], b)).toBe('Your 3rd book this year');
+  });
+  it('names the first of a year, and a past year by number', () => {
+    const b = book({ reads: [done(null, '2025-03-01')] });
+    expect(fact([b], b)).toBe('First book of 2025');
+  });
+  it('marks round numbers', () => {
+    const others = Array.from({ length: 9 }, (_, i) => book({ author: `A${i}`, reads: [done(null, `2026-0${i + 1}-01`)] }));
+    const b = book({ author: 'Z', reads: [done(null, '2026-10-01')] });
+    expect(fact([...others, b], b)).toBe('Your 10th book this year');
+  });
+  it('rereads and second tries come first', () => {
+    const again = book({ reads: [done(null, '2020-01-01'), done(null, '2026-10-24')] });
+    expect(fact([again], again)).toBe('Second time through');
+    const retry = book({ reads: [read({ status: 'dnf', ended: '2025-05-01' }), done(null, '2026-10-24')] });
+    expect(fact([retry], retry)).toBe('Finished on the second try');
+  });
+  it('quickest and longest need a few dated reads and no tie', () => {
+    const others = [book({ author: 'X', reads: [done('2026-01-01', '2026-01-11')] }), book({ author: 'Y', reads: [done('2026-02-01', '2026-02-21')] })];
+    const quick = book({ author: 'Z', reads: [done('2026-10-21', '2026-10-24')] });
+    expect(fact([...others, quick], quick)).toBe('Your quickest read this year: 3 days');
+    const slow = book({ author: 'Z', reads: [done('2026-08-01', '2026-10-24')] });
+    expect(fact([...others, slow], slow)).toBe('Your longest read this year: 84 days');
+    const tie = book({ author: 'Z', reads: [done('2026-10-14', '2026-10-24')] });
+    expect(fact([...others, tie], tie)).toBe('Your 3rd book this year');
+  });
+  it('counts books by the same author', () => {
+    const first = book({ author: 'George Eliot', reads: [done(null, '2024-01-01')] });
+    const other = book({ author: 'X', reads: [done(null, '2026-01-01')] });
+    const b = book({ author: 'George Eliot', reads: [done(null, '2026-10-24')] });
+    expect(fact([first, other, b], b)).toBe('Your second by George Eliot');
   });
 });

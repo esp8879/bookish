@@ -20,6 +20,9 @@ interface UI {
   finishing: Finishing | null;
   setFinishing: (f: Finishing | null) => void;
   toast: (msg: string, undo?: () => void) => void;
+  /** A book was just finished: the main screen's count rolls over to the new number the next time it's in view. */
+  ledgerTick: boolean;
+  setLedgerTick: (v: boolean) => void;
 }
 
 const Ctx = createContext<UI | null>(null);
@@ -38,6 +41,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const [adding, setAdding] = useState(false);
   const [finishing, setFinishing] = useState<Finishing | null>(null);
   const [toastState, setToastState] = useState<ToastState | null>(null);
+  const [ledgerTick, setLedgerTick] = useState(false);
   const timer = useRef<number | null>(null);
 
   const toast = useCallback((msg: string, undo?: () => void) => {
@@ -51,7 +55,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
   const openBook = useCallback((id: string | null, opts?: { edit?: boolean }) => { setEditOnOpen(!!opts?.edit); setBookId(id); }, []);
 
   return (
-    <Ctx.Provider value={{ tab, setTab, bookId, openBook, editOnOpen, adding, setAdding, finishing, setFinishing, toast }}>
+    <Ctx.Provider value={{ tab, setTab, bookId, openBook, editOnOpen, adding, setAdding, finishing, setFinishing, toast, ledgerTick, setLedgerTick }}>
       {children}
       {toastState && (
         <div className="toast" key={toastState.key} role="status">

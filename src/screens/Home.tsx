@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../data/store';
 import { useUI, type Tab } from '../ui';
 import { queue, readingNow, UP_NEXT, yearStats } from '../lib/books';
@@ -13,7 +13,14 @@ const DRAWERS: { id: Exclude<Tab, 'now'>; label: string }[] = [{ id: 'queue', la
 
 export function Home() {
   const { books, loaded, demo } = useStore();
-  const { setTab } = useUI();
+  const { setTab, ledgerTick, setLedgerTick, finishing, bookId } = useUI();
+  // The count rolls over once the main screen is back in view: no sheet or book page on top of it.
+  const tick = ledgerTick && !finishing && !bookId;
+  useEffect(() => {
+    if (!tick) return;
+    const t = window.setTimeout(() => setLedgerTick(false), 2400);
+    return () => window.clearTimeout(t);
+  }, [tick, setLedgerTick]);
   const [swiped, setSwiped] = useState<string | null>(null);
   const reading = useMemo(() => readingNow(books), [books]);
   const q = useMemo(() => queue(books), [books]);
@@ -25,7 +32,7 @@ export function Home() {
     <main className="screen home">
       <header className="home-head">
         <div className="home-top"><Wordmark size="mini" /><SyncMark /></div>
-        <div className="ledger">{fmtShortDay(day)} · {finished} {finished === 1 ? 'book' : 'books'} this year</div>
+        <div className="ledger">{fmtShortDay(day)} · <span className={`ledger-n${tick ? ' tick' : ''}`}>{finished}</span> {finished === 1 ? 'book' : 'books'} this year</div>
       </header>
 
       {demo && (

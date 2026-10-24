@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent } from 'react';
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 import type { Book } from '../types';
 import { lastRead, rankAt, UP_NEXT } from '../lib/books';
 import { daysBetween, fmtDate, isFullDate } from '../lib/dates';
@@ -56,6 +56,17 @@ export function QueueList({ books, queue, sortable = true, numbered = false }: {
     setDrag(null);
   };
 
+  /** Keyboard reordering: arrow keys on a focused handle move the book one place in the whole queue. */
+  const key = (e: KeyboardEvent, b: Book) => {
+    const step = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const from = queue.findIndex((x) => x.id === b.id);
+    const to = from + step;
+    if (from < 0 || to < 0 || to >= queue.length) return;
+    update(b.id, { rank: rankAt(queue.filter((x) => x.id !== b.id), to) });
+  };
+
   const shift = (i: number) => {
     if (!drag || i === drag.from) return 0;
     const h = drag.heights[drag.from];
@@ -85,9 +96,10 @@ export function QueueList({ books, queue, sortable = true, numbered = false }: {
               {b.author && <span className="author">{b.author}</span>}
               <SetAside book={b} />
             </button>
-            {sortable && <span className="handle" aria-label={`Reorder ${b.title}`} onPointerDown={(e) => down(e, i)} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+            {sortable && <button type="button" className="handle" aria-label={`Reorder ${b.title}`} title="Drag, or use the arrow keys, to reorder"
+              onPointerDown={(e) => down(e, i)} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onKeyDown={(e) => key(e, b)}>
               <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden><path d="M3 6h12M3 9h12M3 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
-            </span>}
+            </button>}
           </li>
         );
       })}

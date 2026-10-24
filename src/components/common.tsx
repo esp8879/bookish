@@ -15,8 +15,10 @@ export function useBodyLock() {
  * Bottom sheet. On iOS the keyboard covers the bottom of the layout viewport, so the sheet follows
  * the visual viewport: it sits on top of the keyboard and never grows taller than what's visible.
  * With `action` (e.g. Save), the header becomes a Cancel / action bar that stays pinned while the body scrolls.
+ * `closeButton={false}` drops the header's Close when the sheet ends in its own way out (Escape and the backdrop still close it).
+ * `lead` comes before the title (the finish stamp); `showTitle={false}` keeps the title for screen readers only.
  */
-export function Sheet({ title, onClose, children, action }: { title: string; onClose: () => void; children: ReactNode; action?: ReactNode }) {
+export function Sheet({ title, onClose, children, action, closeButton = true, lead, showTitle = true }: { title: string; onClose: () => void; children: ReactNode; action?: ReactNode; closeButton?: boolean; lead?: ReactNode; showTitle?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -46,7 +48,8 @@ export function Sheet({ title, onClose, children, action }: { title: string; onC
         {action ? (
           <div className="sheet-bar"><button className="btn link" onClick={onClose}>Cancel</button>{action}</div>
         ) : null}
-        <div className="sheet-head"><h2>{title}</h2>{!action && <button className="btn link" onClick={onClose}>Close</button>}</div>
+        {lead}
+        {(showTitle || (!action && closeButton)) && <div className="sheet-head">{showTitle && <h2>{title}</h2>}{!action && closeButton && <button className="btn link" onClick={onClose}>Close</button>}</div>}
         {children}
       </div>
     </>

@@ -219,14 +219,17 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 
 .reads > li:last-child { border-bottom: 0; }
 .read-entry { display: flex; flex-direction: column; gap: 6px; padding: 14px 0; width: 100%; }
 .read-meta { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.read-meta span:first-child { font-weight: 600; font-variant: all-small-caps; letter-spacing: .1em; font-size: 15px; color: var(--ink); }
+/* The status in sentence case, so it reads as content under the small-caps section label, not as a second label. */
+.read-meta span:first-child { font-weight: 600; font-size: 15px; color: var(--ink); }
 .read-entry .note { font-size: 16px; opacity: 1; }
 .add-note { font-size: 14px; color: var(--green); font-weight: 600; }
 .editor { display: flex; flex-direction: column; gap: 14px; padding: 14px 0; }
 .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .highlights { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
 .highlights blockquote { margin: 0; padding-left: 14px; border-left: 2px solid var(--green); font-family: var(--serif); font-size: 16px; line-height: 1.55; white-space: pre-wrap; }
+/* Remove is undoable and secondary to the passage: muted like the location beside it. */
 .hl-meta button { margin-left: auto; margin-right: -10px; }
+.hl-meta .btn.link { color: var(--muted); font-weight: 500; }
 .hl-meta { display: flex; justify-content: space-between; align-items: center; padding-left: 16px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--drawers-h) + 16px + env(safe-area-inset-bottom)); z-index: 60; background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 8px; display: flex; gap: 14px; align-items: center; font-size: 15px; min-width: 240px; max-width: calc(100vw - 32px); box-shadow: 0 8px 28px rgba(29, 25, 21, .25); animation: fade .15s; }
@@ -248,8 +251,9 @@ select { background-image: linear-gradient(45deg, transparent 50%, var(--muted) 
 .pace dd { margin: 4px 0 0; display: flex; flex-direction: column; gap: 3px; }
 .pace-n { font-family: var(--serif); font-size: 24px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .pace-t { font-family: var(--serif); font-size: 13px; line-height: 1.3; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.tally { display: flex; gap: 28px; align-items: baseline; }
-.tally > div { display: flex; flex-direction: column; }
+/* Two rows on a grid: the numbers share a baseline and so do their labels. Pulled up under the year, whose numbers they are. */
+.tally { display: grid; grid-auto-flow: column; grid-template-rows: auto auto; justify-content: start; column-gap: 28px; align-items: baseline; margin-top: -14px; }
+.tally > div { display: contents; }
 .tally-n { font-family: var(--serif); font-size: 64px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
 .tally-n.small { font-size: 34px; }
 .tally-l { font-size: 14px; color: var(--muted); margin-top: 6px; }
@@ -278,6 +282,28 @@ section > p.small { margin-top: 8px; }
 .lede { font-family: var(--serif); font-size: 21px; line-height: 1.4; }
 .welcome .stack { margin-top: 18px; }
 
+/* The finish moment: a circulation-desk date stamp, double-ruled in library green, pressed onto the sheet once. */
+.finish-moment { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 12px 0 4px; text-align: center; }
+.stamp { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; padding: 9px 20px 8px; border: 2px solid var(--green); border-radius: 6px; color: var(--green);
+  box-shadow: inset 0 0 0 3px var(--paper), inset 0 0 0 4px var(--green); font-weight: 700; font-variant: all-small-caps; letter-spacing: .2em; line-height: 1.15;
+  transform: rotate(-3deg); animation: stamp .34s cubic-bezier(.2, .9, .3, 1.2) .12s both; }
+.stamp > span:first-child { font-size: 22px; }
+.stamp-date { font-size: 14px; letter-spacing: .16em; font-variant-numeric: tabular-nums; }
+.finish-fact { font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 1.4; animation: fade .3s .42s both; }
+@keyframes stamp {
+  0% { opacity: 0; transform: rotate(-10deg) scale(1.7); }
+  60% { opacity: 1; transform: rotate(-2.5deg) scale(.96); }
+  100% { transform: rotate(-3deg) scale(1); }
+}
+/* After a finish, the year's count on the main screen rolls up to its new number in green, then settles back to the ledger's grey. */
+.ledger-n { display: inline-block; }
+.ledger-n.tick { animation: ledger-tick 2s ease-out .25s both; }
+@keyframes ledger-tick {
+  0% { transform: translateY(.9em); opacity: 0; color: var(--green); }
+  18% { transform: none; opacity: 1; color: var(--green); }
+  65% { color: var(--green); }
+  100% { color: var(--muted); }
+}
 @keyframes fade { from { opacity: 0; } }
 @keyframes up { from { transform: translateY(24px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -324,7 +350,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline: non
   .nav-btn:hover { background: var(--paper-2); }
   .nav-btn.primary:hover { background: var(--green); filter: brightness(1.08); }
   /* Swipe isn't a pointer gesture: the same actions appear on hover or keyboard focus. */
-  .reading-row .hover-actions { display: flex; position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 2; gap: 6px; padding-left: 16px; background: var(--paper); opacity: 0; pointer-events: none; transition: opacity .12s; }
+  /* They sit on the author line, which is short, so a long title is never covered; a fade on the left edge
+     softens them over a long author name instead of cutting it off. */
+  .reading-row .hover-actions { display: flex; position: absolute; right: 0; bottom: 10px; z-index: 2; gap: 6px; padding-left: 28px; opacity: 0; pointer-events: none; transition: opacity .12s;
+    background: linear-gradient(to right, rgb(var(--paper-rgb) / 0), rgb(var(--paper-rgb)) 24px); }
+  .reading-row .hover-actions .btn { min-height: 30px; padding: 0 10px; font-size: 13px; border-radius: 999px; }
   .reading-row:hover .hover-actions, .reading-row:focus-within .hover-actions { opacity: 1; pointer-events: auto; }
 }
 
